@@ -472,8 +472,16 @@ async function downloadPdf() {
 }
 
 /* ── View switching ── */
+function updateQuoteBar() {
+  const g = grandTotal(), t = quoteTotal(), gst = num(state.gst), disc = num(state.discount);
+  $('#quoteTotal').textContent = fmt(g);
+  let extra = '';
+  if (disc > 0 || gst > 0) extra = `from ${fmt(t)}${disc > 0 ? ' − ' + fmt(disc) : ''}${gst ? ' + ' + gst + '% GST' : ''}`;
+  $('#quoteBreakdown').textContent = extra;
+}
 function showQuote() {
   renderQuote();
+  updateQuoteBar();
   $('#builder').classList.add('hidden');
   $('#quote').classList.remove('hidden');
   window.scrollTo(0, 0);

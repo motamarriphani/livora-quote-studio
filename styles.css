@@ -212,13 +212,27 @@ body {
 .lib-rate small { font-weight: 500; color: var(--faint); }
 
 /* ═══════════════ QUOTE VIEW (final template) ═══════════════ */
-.quote-view { background: var(--bg); min-height: 100vh; padding: 16px 12px 120px; }
+.quote-view { background: var(--bg); min-height: 100vh; padding: 70px 12px 120px; }
+.quote-close {
+  position: fixed; top: calc(12px + env(safe-area-inset-top)); right: 14px; z-index: 60;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--line); background: rgba(255,255,255,.95);
+  font-size: 15px; color: var(--ink-soft); cursor: pointer;
+  display: grid; place-items: center;
+  box-shadow: 0 4px 16px rgba(36,29,22,.12);
+  transition: all .15s;
+}
+.quote-close:hover { color: var(--danger); border-color: var(--danger); }
 .quote-actions {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; max-width: 760px; margin: 0 auto;
-  display: flex; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background: rgba(255,255,255,.92); backdrop-filter: blur(14px); border-top: 1px solid var(--line);
 }
-.quote-actions .btn { flex: 1; }
+.quote-total { flex: 1; min-width: 0; }
+.qt-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); }
+.qt-amount { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.3px; line-height: 1.15; }
+.qt-breakdown { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quote-actions .btn { flex: 0 0 auto; }
 .quote-sheet {
   max-width: 760px; margin: 0 auto; background: #fff; border-radius: 12px;
   box-shadow: var(--shadow); padding: 28px 24px; overflow-x: auto;
@@ -280,7 +294,7 @@ body {
 @media print {
   @page { size: A4; margin: 12mm 10mm; }
   body { background: #fff; font-size: 11px; }
-  #builder, .sum-bar, .quote-actions, .modal { display: none !important; }
+  #builder, .sum-bar, .quote-actions, .quote-close, .modal { display: none !important; }
   .quote-view { padding: 0; background: #fff; min-height: auto; }
   .quote-sheet { box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
   /* table header repeats; rows & section titles never split across pages */

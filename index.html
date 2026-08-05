@@ -74,11 +74,15 @@
 
 <!-- ══════════════ QUOTE VIEW (final template) ══════════════ -->
 <div id="quote" class="quote-view hidden">
+  <button class="quote-close" data-action="back-to-builder" title="Close preview">✕</button>
   <div id="quoteSheet" class="quote-sheet"></div>
   <div class="quote-actions">
-    <button class="btn ghost" data-action="back-to-builder">← Edit quote</button>
-    <button class="btn primary" data-action="download-pdf">⬇ Download PDF</button>
-    <button class="btn primary" data-action="print">Print / Save PDF</button>
+    <div class="quote-total">
+      <div class="qt-label">Total cost</div>
+      <div class="qt-amount" id="quoteTotal">₹0</div>
+      <div class="qt-breakdown" id="quoteBreakdown"></div>
+    </div>
+    <button class="btn primary" data-action="download-pdf">⬇ Download Quote</button>
   </div>
 </div>
 
