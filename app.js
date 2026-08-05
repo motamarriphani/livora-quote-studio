@@ -359,7 +359,7 @@ function buildPdfDef() {
 
   return {
     pageSize: 'A4',
-    pageMargins: [36, 32, 36, 40],
+    pageMargins: [36, 40, 36, 48],
     info: {
       title: 'Quotation ' + (state.quoteNo || ''),
       author: c.name,
@@ -405,21 +405,22 @@ function buildPdfDef() {
           vLineWidth: () => 0.5,
           hLineColor: () => '#c9bfb2',
           vLineColor: () => '#c9bfb2',
-          paddingTop: () => 3,
-          paddingBottom: () => 3,
+          paddingTop: () => 3.5,
+          paddingBottom: () => 3.5,
           paddingLeft: () => 5,
           paddingRight: () => 5,
         },
         margin: [0, 0, 0, 10] },
       { text: 'AMOUNT IN WORDS : ' + amountInWords(grand), fontSize: 9.5, bold: true, margin: [0, 0, 0, 6] },
       { text: 'NOTE — TERMS & CONDITIONS', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 2, 0, 3] },
-      { ol: getTerms().map(t => ({ text: t, fontSize: 8, margin: [0, 0.8, 0, 0.8] })), margin: [0, 0, 0, 3] },
+      { ol: getTerms().map(t => ({ text: t, fontSize: 8.5, margin: [0, 1.2, 0, 1.2] })), margin: [0, 0, 0, 4] },
       { text: 'MATERIAL SPECIFICATION', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 6, 0, 3] },
       { table: {
+          dontBreakRows: true,
           widths: [118, '*'],
           body: state.spec.map(s => [
-            { text: s.c.toUpperCase(), bold: true, fontSize: 7, fillColor: ACCENT_BG, color: INK, margin: [3, 2, 3, 2] },
-            { text: s.d, fontSize: 7.4, margin: [3, 2, 3, 2] },
+            { text: s.c.toUpperCase(), bold: true, fontSize: 7.8, fillColor: ACCENT_BG, color: INK, margin: [4, 3, 4, 3] },
+            { text: s.d, fontSize: 8.2, margin: [4, 3, 4, 3] },
           ]),
         },
         layout: {
@@ -435,12 +436,12 @@ function buildPdfDef() {
         margin: [0, 0, 0, 6] },
       { columns: [
         { width: '*', stack: [
-          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.8, lineColor: INK }], margin: [0, 18, 0, 4] },
+          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.8, lineColor: INK }], margin: [0, 30, 0, 5] },
           { text: 'CUSTOMER NAME', alignment: 'center', fontSize: 9, bold: true },
           { text: 'Signature', alignment: 'center', fontSize: 7.5, color: '#8a7d6f' },
         ] },
         { width: '*', stack: [
-          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.8, lineColor: INK }], margin: [0, 18, 0, 4] },
+          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.8, lineColor: INK }], margin: [0, 30, 0, 5] },
           { text: 'For ' + c.name, alignment: 'center', fontSize: 9, bold: true },
           { text: 'Authorized Signatory', alignment: 'center', fontSize: 7.5, color: '#8a7d6f' },
         ] },

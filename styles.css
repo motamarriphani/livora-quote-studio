@@ -167,6 +167,7 @@ body {
   padding: 9px 8px 7px; font-size: 13px; text-align: center; font-family: inherit; color: var(--ink);
 }
 .adj-field input:focus { outline: none; border-color: var(--accent); background: #fff; }
+.sum-btns { display: flex; gap: 8px; }
 .bar-spacer { height: 24px; }
 
 /* ─── Buttons ─── */
@@ -275,30 +276,29 @@ body {
   .quote-sheet { padding: 40px 44px; }
 }
 
-/* ─── Print (A4) ─── */
+/* ─── Print (A4) — natural flow, clean breaks, readable sizes ─── */
 @media print {
-  @page { size: A4; margin: 8mm 7mm; }
-  body { background: #fff; font-size: 10.5px; }
+  @page { size: A4; margin: 12mm 10mm; }
+  body { background: #fff; font-size: 11px; }
   #builder, .sum-bar, .quote-actions, .modal { display: none !important; }
   .quote-view { padding: 0; background: #fff; min-height: auto; }
   .quote-sheet { box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
-  .qs-header { padding-bottom: 8px; }
-  .qs-meta { margin: 6px 0 3px; }
-  .qs-table { font-size: 9px; }
-  .qs-table th { padding: 3px 5px; font-size: 8.5px; }
-  .qs-table td { padding: 2px 4px; }
-  .qs-table .room-row td { font-size: 9px; }
-  .qs-words { margin-top: 4px; padding: 4px 8px; font-size: 9.5px; }
-  .qs-note { margin-top: 6px; font-size: 9px; }
-  .qs-terms li { margin-top: 1px; }
-  .qs-spec { margin-top: 5px; font-size: 9px; }
-  .qs-spec h4 { margin-bottom: 3px; }
-  .qs-spec-table { font-size: 7.5px; }
-  .qs-spec-table td { padding: 1px 4px; line-height: 1.25; }
-  .qs-spec-table .spec-c { font-size: 7px; }
-  .qs-sigs { margin-top: 4px; }
-  .qs-foot { display: none; }
-  .qs-brand { font-size: 19px; }
-  .qs-cust { padding: 4px 8px; margin: 4px 0 7px; }
+  /* table header repeats; rows & section titles never split across pages */
+  .qs-table { font-size: 10.5px; }
+  .qs-table th { padding: 4px 6px; font-size: 10px; }
+  .qs-table td { padding: 4px 6px; }
+  .qs-table tr { break-inside: avoid; }
+  .qs-table .room-row { break-after: avoid; }
+  .qs-words { margin-top: 10px; padding: 6px 10px; font-size: 11px; }
+  .qs-note { margin-top: 12px; font-size: 10.5px; }
+  .qs-note h4, .qs-spec h4 { break-after: avoid; }
+  .qs-spec { margin-top: 12px; font-size: 10.5px; }
+  .qs-spec-table { font-size: 9.5px; }
+  .qs-spec-table td { padding: 3px 6px; line-height: 1.4; }
+  .qs-spec-table tr { break-inside: avoid; }
+  .qs-sigs { margin-top: 30px; break-inside: avoid; }
+  .qs-foot { margin-top: 12px; }
+  .qs-brand { font-size: 24px; }
+  .qs-cust { padding: 6px 10px; margin: 6px 0 10px; }
 }
 
