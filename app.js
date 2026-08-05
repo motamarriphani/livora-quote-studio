@@ -611,8 +611,6 @@ document.addEventListener('click', e => {
     case 'back-to-builder': showBuilder(); break;
     case 'print': window.print(); break;
     case 'download-pdf': downloadPdf(); break;
-    case 'export': exportJSON(); break;
-    case 'import': $('#importFile').click(); break;
     case 'sample':
       if (confirm('Load the sample quote from the LIVORA PDF? (replaces current data)')) loadSample();
       break;
@@ -697,11 +695,6 @@ function init() {
   $('#timeline').value = state.timeline || '';
 
   render();
-
-  $('#importFile').addEventListener('change', e => {
-    if (e.target.files[0]) importJSON(e.target.files[0]);
-    e.target.value = '';
-  });
 
   window.addEventListener('beforeprint', () => { renderQuote(); });
   window.addEventListener('afterprint', () => { /* nothing */ });
