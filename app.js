@@ -204,7 +204,10 @@ function renderLibrary(q = '') {
 function addSection(name = '') {
   const sec = { id: uid(), name: name || 'New Section', items: [], collapsed: false };
   state.sections.push(sec);
-  render();
+  save(); render();
+  // jump straight into renaming the new room
+  const el = document.querySelector(`.section-card[data-sec="${sec.id}"] .sec-name`);
+  if (el) { el.focus(); el.select(); }
   return sec;
 }
 function addItemFromLib(libId) {
@@ -577,6 +580,8 @@ document.addEventListener('click', e => {
       break;
     }
     case 'toggle-sec': {
+      // don't collapse when the user is interacting with fields/buttons inside the header
+      if (e.target.closest('input, button, select, textarea')) break;
       const card = btn.closest('.section-card');
       const sec = state.sections.find(s => s.id === card.dataset.sec);
       if (sec) { sec.collapsed = !sec.collapsed; save(); render(); }
