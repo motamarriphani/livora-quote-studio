@@ -223,26 +223,6 @@ body {
   box-shadow: var(--shadow); padding: 28px 24px; overflow-x: auto;
 }
 
-/* ─── Print (A4) ─── */
-@media print {
-  @page { size: A4; margin: 10mm 9mm; }
-  body { background: #fff; font-size: 11px; }
-  #builder, .sum-bar, .quote-actions, .modal { display: none !important; }
-  .quote-view { padding: 0; background: #fff; min-height: auto; }
-  .quote-sheet { box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
-  .qs-table { font-size: 10px; }
-  .qs-table th { padding: 4px 6px; font-size: 9.5px; }
-  .qs-table td { padding: 3.5px 6px; }
-  .qs-table .room-row td { font-size: 10px; }
-  .qs-words { margin-top: 8px; padding: 6px 10px; font-size: 10.5px; }
-  .qs-note { margin-top: 10px; font-size: 10.5px; }
-  .qs-spec { margin-top: 8px; font-size: 10.5px; }
-  .qs-sigs { margin-top: 18px; }
-  .qs-foot { display: none; }
-  .qs-brand { font-size: 22px; }
-  .qs-cust { padding: 6px 10px; margin: 6px 0 10px; }
-}
-
 /* quote sheet internals */
 .qs-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; border-bottom: 3px double #241d16; padding-bottom: 12px; }
 .qs-brand { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 700; letter-spacing: .3px; }
@@ -277,8 +257,11 @@ body {
 .qs-terms { list-style: none; }
 .qs-terms li { display: flex; gap: 8px; margin-top: 3px; }
 .qs-terms .n { font-weight: 700; min-width: 16px; }
-.qs-spec { margin-top: 14px; font-size: 11.5px; white-space: pre-line; }
+.qs-spec { margin-top: 14px; font-size: 11.5px; }
 .qs-spec h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #241d16; padding-bottom: 3px; margin-bottom: 6px; }
+.qs-spec-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+.qs-spec-table td { border: 1px solid #c9bfb2; padding: 4px 8px; vertical-align: top; line-height: 1.4; }
+.qs-spec-table .spec-c { font-weight: 600; background: #fbf8f4; width: 32%; font-size: 10px; text-transform: uppercase; letter-spacing: .3px; }
 .qs-sigs { display: flex; justify-content: space-between; gap: 20px; margin-top: 44px; }
 .qs-sig { flex: 1; text-align: center; font-size: 12px; font-weight: 600; border-top: 1px solid #241d16; padding-top: 8px; }
 .qs-sig small { display: block; font-weight: 400; color: var(--muted); font-size: 10.5px; margin-top: 2px; }
@@ -291,3 +274,31 @@ body {
   .lib-grid { grid-template-columns: repeat(3, 1fr); }
   .quote-sheet { padding: 40px 44px; }
 }
+
+/* ─── Print (A4) ─── */
+@media print {
+  @page { size: A4; margin: 8mm 7mm; }
+  body { background: #fff; font-size: 10.5px; }
+  #builder, .sum-bar, .quote-actions, .modal { display: none !important; }
+  .quote-view { padding: 0; background: #fff; min-height: auto; }
+  .quote-sheet { box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
+  .qs-header { padding-bottom: 8px; }
+  .qs-meta { margin: 6px 0 3px; }
+  .qs-table { font-size: 9px; }
+  .qs-table th { padding: 3px 5px; font-size: 8.5px; }
+  .qs-table td { padding: 2px 4px; }
+  .qs-table .room-row td { font-size: 9px; }
+  .qs-words { margin-top: 4px; padding: 4px 8px; font-size: 9.5px; }
+  .qs-note { margin-top: 6px; font-size: 9px; }
+  .qs-terms li { margin-top: 1px; }
+  .qs-spec { margin-top: 5px; font-size: 9px; }
+  .qs-spec h4 { margin-bottom: 3px; }
+  .qs-spec-table { font-size: 7.5px; }
+  .qs-spec-table td { padding: 1px 4px; line-height: 1.25; }
+  .qs-spec-table .spec-c { font-size: 7px; }
+  .qs-sigs { margin-top: 4px; }
+  .qs-foot { display: none; }
+  .qs-brand { font-size: 19px; }
+  .qs-cust { padding: 4px 8px; margin: 4px 0 7px; }
+}
+

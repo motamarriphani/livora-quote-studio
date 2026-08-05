@@ -45,9 +45,14 @@ const DEFAULT_TERMS = [
 ];
 
 const DEFAULT_SPEC = [
-  'Plywood / Core Material: CENTURY CLUB PRIME 710 Grade BWP Plywood 16MM AND 6MM',
-  'Laminate: 1MM HGL / MATT / Fluted Laminate. Each Laminate cost not more than Rs. 2000',
-].join('\n');
+  { c: 'Plywood / Core Material', d: 'Premium 710 Grade BWP Plywood – Century Club Prime / Greenply, 16mm & 6mm thickness, as per design and application.' },
+  { c: 'Laminates', d: 'Premium 1mm Merino / Greenlam Laminates – HGL / Matte / Fluted finishes, as per client-approved design and colour selection (internal laminate 0.8mm).' },
+  { c: 'Kitchen Finish', d: 'Premium Acrylic finish for kitchen shutters, as per approved design and colour.' },
+  { c: 'Kitchen Accessories', d: 'Premium modular kitchen accessories – baskets, cutlery unit, bottle pull-out, tandem units and required fittings, as per approved BOQ / scope of work.' },
+  { c: 'Hardware & Fittings', d: 'Premium branded soft-close hinges, channels and fittings, as per approved specifications.' },
+  { c: 'Wardrobes & Other Units', d: 'Century / Greenply 710 Grade BWP plywood with Merino / Greenlam 1mm laminate, internal storage and fittings as per approved design.' },
+  { c: 'Kitchen', d: 'HDMR (High Density Moisture Resistant) board for kitchen carcass, as per approved design.' },
+];
 
 /* ── State ── */
 let state = {
@@ -124,6 +129,7 @@ function load() {
       state.validityDays = num(state.validityDays) || 15;
       state.timeline = state.timeline || '';
       if (!Array.isArray(state.terms) || state.terms.length < 8) state.terms = [...DEFAULT_TERMS];
+      if (!Array.isArray(state.spec) || !state.spec.length) state.spec = DEFAULT_SPEC.map(x => ({ ...x }));
       return true;
     }
   } catch (e) {}
@@ -279,7 +285,12 @@ function renderQuote() {
       <h4>Note — Terms &amp; Conditions</h4>
       <ol class="qs-terms">${getTerms().map((t, i) => `<li><span class="n">${i + 1}</span><span>${esc(t)}</span></li>`).join('')}</ol>
     </div>
-    <div class="qs-spec"><h4>Material Specification</h4>${esc(state.spec)}</div>
+    <div class="qs-spec">
+      <h4>Material Specification</h4>
+      <table class="qs-spec-table">
+        ${state.spec.map(s => `<tr><td class="spec-c">${esc(s.c)}</td><td>${esc(s.d)}</td></tr>`).join('')}
+      </table>
+    </div>
     <div class="qs-sigs">
       <div class="qs-sig">CUSTOMER NAME<small>Signature</small></div>
       <div class="qs-sig">For ${esc(c.name)}<small>Authorized Signatory</small></div>
@@ -348,7 +359,7 @@ function buildPdfDef() {
 
   return {
     pageSize: 'A4',
-    pageMargins: [36, 34, 36, 42],
+    pageMargins: [36, 32, 36, 40],
     info: {
       title: 'Quotation ' + (state.quoteNo || ''),
       author: c.name,
@@ -402,17 +413,34 @@ function buildPdfDef() {
         margin: [0, 0, 0, 10] },
       { text: 'AMOUNT IN WORDS : ' + amountInWords(grand), fontSize: 9.5, bold: true, margin: [0, 0, 0, 6] },
       { text: 'NOTE — TERMS & CONDITIONS', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 2, 0, 3] },
-      { ol: getTerms().map(t => ({ text: t, fontSize: 8.5, margin: [0, 1, 0, 1] })), margin: [0, 0, 0, 4] },
+      { ol: getTerms().map(t => ({ text: t, fontSize: 8, margin: [0, 0.8, 0, 0.8] })), margin: [0, 0, 0, 3] },
       { text: 'MATERIAL SPECIFICATION', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 6, 0, 3] },
-      { text: state.spec, fontSize: 8.5, lineHeight: 1.35, margin: [0, 0, 0, 6] },
+      { table: {
+          widths: [118, '*'],
+          body: state.spec.map(s => [
+            { text: s.c.toUpperCase(), bold: true, fontSize: 7, fillColor: ACCENT_BG, color: INK, margin: [3, 2, 3, 2] },
+            { text: s.d, fontSize: 7.4, margin: [3, 2, 3, 2] },
+          ]),
+        },
+        layout: {
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: () => '#c9bfb2',
+          vLineColor: () => '#c9bfb2',
+          paddingTop: () => 0,
+          paddingBottom: () => 0,
+          paddingLeft: () => 0,
+          paddingRight: () => 0,
+        },
+        margin: [0, 0, 0, 6] },
       { columns: [
         { width: '*', stack: [
-          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.8, lineColor: INK }], margin: [0, 26, 0, 5] },
+          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.8, lineColor: INK }], margin: [0, 18, 0, 4] },
           { text: 'CUSTOMER NAME', alignment: 'center', fontSize: 9, bold: true },
           { text: 'Signature', alignment: 'center', fontSize: 7.5, color: '#8a7d6f' },
         ] },
         { width: '*', stack: [
-          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.8, lineColor: INK }], margin: [0, 26, 0, 5] },
+          { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.8, lineColor: INK }], margin: [0, 18, 0, 4] },
           { text: 'For ' + c.name, alignment: 'center', fontSize: 9, bold: true },
           { text: 'Authorized Signatory', alignment: 'center', fontSize: 7.5, color: '#8a7d6f' },
         ] },
