@@ -54,6 +54,22 @@
 
   <!-- spacer for sticky bar -->
   <div class="bar-spacer"></div>
+
+  <!-- ══════════════ STICKY SUMMARY BAR ══════════════ -->
+  <div class="sum-bar">
+    <div class="sum-main">
+      <div class="sum-count" id="sumCount">0 items</div>
+      <div class="sum-total" id="sumTotal">₹0</div>
+    </div>
+    <div class="sum-adj">
+      <div class="adj-field"><label>Discount ₹</label><input id="discount" type="number" step="1" min="0" placeholder="0"></div>
+      <div class="adj-field"><label>GST %</label><input id="gst" type="number" step="0.5" min="0" placeholder="0"></div>
+    </div>
+    <div class="sum-btns">
+      <button class="btn primary" data-action="download-pdf">⬇ PDF</button>
+      <button class="btn ghost" data-action="preview">Preview</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══════════════ QUOTE VIEW (final template) ══════════════ -->
@@ -101,22 +117,6 @@
     <input id="cRate" class="field" type="number" placeholder="Rate (₹/sqft)" step="1" min="0">
     <label class="check"><input id="cLump" type="checkbox"> Lump sum (no W×H — e.g. painting, electrical)</label>
     <button class="btn primary full" data-action="add-custom">Add item</button>
-  </div>
-</div>
-
-<!-- ══════════════ STICKY SUMMARY BAR ══════════════ -->
-<div class="sum-bar">
-  <div class="sum-main">
-    <div class="sum-count" id="sumCount">0 items</div>
-    <div class="sum-total" id="sumTotal">₹0</div>
-  </div>
-  <div class="sum-adj">
-    <div class="adj-field"><label>Discount ₹</label><input id="discount" type="number" step="1" min="0" placeholder="0"></div>
-    <div class="adj-field"><label>GST %</label><input id="gst" type="number" step="0.5" min="0" placeholder="0"></div>
-  </div>
-  <div class="sum-btns">
-    <button class="btn primary" data-action="download-pdf">⬇ PDF</button>
-    <button class="btn ghost" data-action="preview">Preview</button>
   </div>
 </div>
 
