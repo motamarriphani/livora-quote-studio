@@ -144,6 +144,17 @@ body {
 }
 .add-section:hover { border-color: var(--accent); color: var(--accent); background: #fff; }
 
+/* quiet danger button — clear quote lives at the bottom, out of the way */
+.clear-quote {
+  width: 100%; margin-top: 10px; padding: 13px;
+  background: transparent;
+  border: 1.5px dashed rgba(192, 57, 43, .4);
+  border-radius: var(--radius);
+  color: var(--danger); font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.clear-quote:hover { background: rgba(192, 57, 43, .05); border-color: var(--danger); }
+
 /* ─── Sticky summary bar ─── */
 .sum-bar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
