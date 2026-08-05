@@ -149,13 +149,24 @@ body {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
   background: rgba(255,255,255,.92); backdrop-filter: blur(14px);
   border-top: 1px solid var(--line);
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   max-width: 760px; margin: 0 auto;
 }
 .sum-count { font-size: 12px; color: var(--muted); font-weight: 600; }
 .sum-total { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.3px; }
 .sum-total small { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+.sum-adj { display: flex; gap: 8px; align-items: flex-end; }
+.adj-field { position: relative; }
+.adj-field label {
+  position: absolute; top: -7px; left: 8px; font-size: 9px; font-weight: 700; letter-spacing: .6px;
+  color: var(--faint); background: #fff; padding: 0 4px; text-transform: uppercase; z-index: 1;
+}
+.adj-field input {
+  width: 92px; border: 1px solid var(--line); border-radius: 9px; background: #fbfaf8;
+  padding: 9px 8px 7px; font-size: 13px; text-align: center; font-family: inherit; color: var(--ink);
+}
+.adj-field input:focus { outline: none; border-color: var(--accent); background: #fff; }
 .bar-spacer { height: 24px; }
 
 /* ─── Buttons ─── */
@@ -214,11 +225,22 @@ body {
 
 /* ─── Print (A4) ─── */
 @media print {
-  @page { size: A4; margin: 12mm 10mm; }
-  body { background: #fff; font-size: 12px; }
+  @page { size: A4; margin: 10mm 9mm; }
+  body { background: #fff; font-size: 11px; }
   #builder, .sum-bar, .quote-actions, .modal { display: none !important; }
   .quote-view { padding: 0; background: #fff; min-height: auto; }
   .quote-sheet { box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
+  .qs-table { font-size: 10px; }
+  .qs-table th { padding: 4px 6px; font-size: 9.5px; }
+  .qs-table td { padding: 3.5px 6px; }
+  .qs-table .room-row td { font-size: 10px; }
+  .qs-words { margin-top: 8px; padding: 6px 10px; font-size: 10.5px; }
+  .qs-note { margin-top: 10px; font-size: 10.5px; }
+  .qs-spec { margin-top: 8px; font-size: 10.5px; }
+  .qs-sigs { margin-top: 18px; }
+  .qs-foot { display: none; }
+  .qs-brand { font-size: 22px; }
+  .qs-cust { padding: 6px 10px; margin: 6px 0 10px; }
 }
 
 /* quote sheet internals */
@@ -230,7 +252,7 @@ body {
   text-align: center; font-family: 'Fraunces', serif; font-size: 21px; font-weight: 700;
   letter-spacing: 6px; margin: 14px 0 4px; color: var(--ink);
 }
-.qs-meta { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; margin: 10px 0 4px; }
+.qs-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; margin: 10px 0 4px; }
 .qs-meta b { font-weight: 700; }
 .qs-cust { border: 1.5px solid #241d16; padding: 8px 12px; font-size: 12.5px; margin: 8px 0 14px; min-height: 34px; }
 .qs-cust .lbl { font-weight: 700; }
@@ -243,7 +265,10 @@ body {
 .qs-table td { border: 1px solid #c9bfb2; padding: 5px 8px; vertical-align: top; }
 .qs-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .qs-table .room-row td { background: var(--accent-soft); font-weight: 700; font-size: 11px; color: #241d16; }
+.qs-table .subtotal-row td { font-weight: 600; background: #fbf8f4; border-top: 1px solid var(--line-strong); font-size: 10.5px; color: var(--ink-soft); }
 .qs-table .lump-row td.desc { font-style: italic; }
+.qs-words { margin-top: 12px; font-size: 12px; font-weight: 500; border: 1px solid #241d16; padding: 8px 12px; color: var(--ink); }
+.qs-words .lbl { font-weight: 700; }
 .qs-total-row td { border-top: 2px solid #241d16; font-weight: 700; }
 .qs-grand td { background: #241d16; color: #fff; font-weight: 700; border: 1px solid #241d16; }
 
