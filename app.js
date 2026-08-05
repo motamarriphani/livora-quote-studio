@@ -707,8 +707,9 @@ function init() {
   window.addEventListener('beforeprint', () => { renderQuote(); });
   window.addEventListener('afterprint', () => { /* nothing */ });
 
-  // ?print=1 → jump straight to the final template (bookmarkable / PDF-ready)
-  if (new URLSearchParams(location.search).get('print')) {
+  // ?print=1 / ?preview=1 → jump straight to the final template (bookmarkable / PDF-ready)
+  const qp = new URLSearchParams(location.search);
+  if (qp.get('print') || qp.get('preview')) {
     const hasItems = state.sections.some(s => s.items.length);
     if (!hasItems) loadSample();
     showQuote();
