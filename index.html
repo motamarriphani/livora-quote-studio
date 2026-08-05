@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>LIVORA Interiors — Quote Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ══════════════ BUILDER VIEW ══════════════ -->
+<div id="builder" class="app">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">L</div>
+      <div>
+        <div class="brand-name">LIVORA <span>Interiors</span></div>
+        <div class="brand-sub">Quote Studio</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" data-action="export" title="Export JSON">⭳</button>
+      <button class="icon-btn" data-action="import" title="Import JSON">⭱</button>
+      <button class="icon-btn" data-action="sample" title="Load sample quote">🧪</button>
+      <input type="file" id="importFile" accept=".json" hidden>
+      <button class="icon-btn danger" data-action="reset" title="New quote">✕</button>
+    </div>
+  </header>
+
+  <!-- Customer card -->
+  <section class="card cust-card">
+    <div class="card-label">Customer</div>
+    <div class="grid-2">
+      <input class="field" data-field="customer.name" placeholder="Customer name">
+      <input class="field" data-field="customer.phone" placeholder="Phone">
+    </div>
+    <input class="field" data-field="customer.address" placeholder="Address">
+    <div class="grid-2">
+      <input class="field" id="quoteNo" data-field="quoteNo" placeholder="Quote No (auto)">
+      <input class="field" id="date" data-field="date" type="date">
+    </div>
+  </section>
+
+  <!-- Sections -->
+  <div id="sections" class="sections"></div>
+
+  <button class="add-section" data-action="add-section">＋ Add room / section</button>
+
+  <!-- spacer for sticky bar -->
+  <div class="bar-spacer"></div>
+</div>
+
+<!-- ══════════════ QUOTE VIEW (final template) ══════════════ -->
+<div id="quote" class="quote-view hidden">
+  <div id="quoteSheet" class="quote-sheet"></div>
+  <div class="quote-actions">
+    <button class="btn ghost" data-action="back-to-builder">← Edit quote</button>
+    <button class="btn primary" data-action="print">Print / Save PDF</button>
+  </div>
+</div>
+
+<!-- ══════════════ LIBRARY MODAL ══════════════ -->
+<div id="libraryModal" class="modal hidden">
+  <div class="modal-backdrop" data-action="close-library"></div>
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Item library</div>
+        <div class="modal-sub" id="libTarget">Adding to …</div>
+      </div>
+      <button class="icon-btn" data-action="close-library">✕</button>
+    </div>
+    <input id="libSearch" class="field search" type="search" placeholder="Search items…">
+    <div id="libGrid" class="lib-grid"></div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-action="custom-item">＋ Custom item</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ CUSTOM ITEM MODAL ══════════════ -->
+<div id="customModal" class="modal hidden">
+  <div class="modal-backdrop" data-action="close-custom"></div>
+  <div class="modal-sheet small">
+    <div class="modal-head">
+      <div class="modal-title">Custom item</div>
+      <button class="icon-btn" data-action="close-custom">✕</button>
+    </div>
+    <input id="cName" class="field" placeholder="Description">
+    <div class="grid-2">
+      <input id="cW" class="field" type="number" placeholder="Width (ft)" step="0.1" min="0">
+      <input id="cH" class="field" type="number" placeholder="Height (ft)" step="0.1" min="0">
+    </div>
+    <input id="cRate" class="field" type="number" placeholder="Rate (₹/sqft)" step="1" min="0">
+    <label class="check"><input id="cLump" type="checkbox"> Lump sum (no W×H — e.g. painting, electrical)</label>
+    <button class="btn primary full" data-action="add-custom">Add item</button>
+  </div>
+</div>
+
+<!-- ══════════════ STICKY SUMMARY BAR ══════════════ -->
+<div class="sum-bar">
+  <div class="sum-main">
+    <div class="sum-count" id="sumCount">0 items</div>
+    <div class="sum-total" id="sumTotal">₹0</div>
+  </div>
+  <button class="btn primary" data-action="preview">Preview quote</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
