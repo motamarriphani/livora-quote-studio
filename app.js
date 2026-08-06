@@ -456,10 +456,10 @@ function buildPdfDef() {
         },
         margin: [0, 0, 0, 10] },
       { text: 'AMOUNT IN WORDS : ' + amountInWords(grand), fontSize: 9.5, bold: true, margin: [0, 0, 0, 6] },
-      { text: 'NOTE — TERMS & CONDITIONS', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 2, 0, 3] },
+      { text: 'NOTE — TERMS & CONDITIONS', id: 'termsHeading', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 2, 0, 3] },
       { ol: getTerms().map(t => ({ text: t, fontSize: 8.5, margin: [0, 1.2, 0, 1.2] })), margin: [0, 0, 0, 4] },
       ...(showSpec ? [
-        { text: 'MATERIAL SPECIFICATION', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 6, 0, 3] },
+        { text: 'MATERIAL SPECIFICATION', id: 'specHeading', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 6, 0, 3] },
         { table: {
             dontBreakRows: true,
             widths: [118, '*'],
@@ -496,6 +496,23 @@ function buildPdfDef() {
       absolutePosition: { x: 36, y: 690 } },
     ],
     styles: { th: { bold: true, color: '#fff', fillColor: INK, fontSize: 8 } },
+    // If the spec section (or terms, when spec is hidden) would start so low on a
+    // page that it laps into the anchored signature zone (y≈690), push it to the
+    // next page so the signatures always sit clear below all info.
+    pageBreakBefore(nodeInfo) {
+      const SIG_Y = 690, SAFE = 30;
+      if (nodeInfo.id === 'specHeading') {
+        // spec block ≈ heading (~16pt) + 7 rows × ~24pt ≈ 185pt tall
+        const estH = 16 + state.spec.length * 24;
+        return nodeInfo.startPosition && nodeInfo.startPosition.top > SIG_Y - estH - SAFE;
+      }
+      if (nodeInfo.id === 'termsHeading' && !showSpec) {
+        // terms block ≈ heading + ~11 items × ~13pt ≈ 160pt tall
+        const estH = 16 + getTerms().length * 13;
+        return nodeInfo.startPosition && nodeInfo.startPosition.top > SIG_Y - estH - SAFE;
+      }
+      return false;
+    },
   };
 }
 
