@@ -60,7 +60,7 @@ let state = {
   customer: { name: '', phone: '', address: '' },
   quoteNo: '', date: todayStr(),
   sections: [],
-  discount: 0,
+  finalCharge: 0,  // the amount we'll charge the client (grand total); discount is derived
   gst: 0,
   validityDays: 15,
   timeline: '',
@@ -86,9 +86,30 @@ function fmtDate(iso) {
 function itemAmount(it) { return it.lump ? num(it.rate) : num(it.w) * num(it.h) * num(it.rate); }
 function sectionTotal(sec) { return sec.items.reduce((s, it) => s + itemAmount(it), 0); }
 function quoteTotal() { return state.sections.reduce((s, sec) => s + sectionTotal(sec), 0); }
-function taxableBase() { return Math.max(0, quoteTotal() - num(state.discount)); }
-function gstAmount() { const g = num(state.gst); return g ? Math.round(taxableBase() * g / 100) : 0; }
-function grandTotal() { return taxableBase() + gstAmount(); }
+// The client-facing number is the FINAL CHARGE (grand total, incl. GST).
+// Discount is derived: it's whatever we're giving off the raw quote total.
+function taxableBase() {
+  const f = num(state.finalCharge);
+  if (!f) return quoteTotal();            // no final charge entered → no discount
+  const g = num(state.gst);
+  return g > 0 ? f / (1 + g / 100) : f;   // strip GST → pre-GST agreed amount
+}
+function discountAmount() {
+  const f = num(state.finalCharge);
+  if (!f) return 0;
+  return Math.max(0, quoteTotal() - taxableBase());
+}
+function gstAmount() {
+  const g = num(state.gst);
+  if (!g) return 0;
+  const f = num(state.finalCharge);
+  if (f) return Math.round(f - taxableBase());   // GST = final − base (exact)
+  return Math.round(taxableBase() * g / 100);
+}
+function grandTotal() {
+  const f = num(state.finalCharge);
+  return f ? Math.round(f) : taxableBase() + gstAmount();
+}
 function itemCount() { return state.sections.reduce((s, sec) => s + sec.items.length, 0); }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function getTerms() {
@@ -132,6 +153,13 @@ function load() {
       state.timeline = state.timeline || '';
       if (!Array.isArray(state.terms) || state.terms.length < 8) state.terms = [...DEFAULT_TERMS];
       if (!Array.isArray(state.spec) || !state.spec.length) state.spec = DEFAULT_SPEC.map(x => ({ ...x }));
+      // legacy migration: old quotes stored a manual discount → convert to final charge
+      if ('discount' in s && !('finalCharge' in s)) {
+        const base = Math.max(0, quoteTotal() - num(s.discount));
+        state.finalCharge = Math.round(base * (1 + num(state.gst) / 100));
+      }
+      delete state.discount;
+      if (typeof state.finalCharge !== 'number' || !isFinite(state.finalCharge)) state.finalCharge = 0;
       if (typeof state.showDims !== 'boolean') state.showDims = true;
       if (typeof state.showSpec !== 'boolean') state.showSpec = true;
       return true;
@@ -182,13 +210,13 @@ function render() {
 
 function renderSummary() {
   $('#sumCount').textContent = itemCount() + ' item' + (itemCount() === 1 ? '' : 's');
-  const t = quoteTotal(), g = grandTotal(), gst = num(state.gst);
-  const base = taxableBase();
+  const t = quoteTotal(), gst = num(state.gst), disc = discountAmount();
   let extra = '';
-  if (num(state.discount) > 0 || gst > 0) extra = ` <small>${fmt(base)}${gst ? ' + ' + gst + '% GST' : ''}</small>`;
-  $('#sumTotal').innerHTML = fmt(g) + extra;
-  const dEl = $('#discount'), gEl = $('#gst');
-  if (dEl && document.activeElement !== dEl) dEl.value = state.discount || '';
+  if (disc > 0) extra += ` <small>− ${fmt(disc)}</small>`;
+  if (gst > 0) extra += ` <small>+ ${gst}% GST</small>`;
+  $('#sumTotal').innerHTML = fmt(t) + extra;   // big = price BEFORE discount
+  const fEl = $('#finalCharge'), gEl = $('#gst');
+  if (fEl && document.activeElement !== fEl) fEl.value = state.finalCharge || '';
   if (gEl && document.activeElement !== gEl) gEl.value = state.gst || '';
 }
 
@@ -258,7 +286,7 @@ function renderQuote() {
     });
     rows += `<tr class="subtotal-row"><td colspan="${SPAN}" style="text-align:right">Subtotal — ${esc(sec.name)} :</td><td class="num">${fmt(sectionTotal(sec))}</td></tr>`;
   });
-  const disc = num(state.discount);
+  const disc = discountAmount();
   const gst = num(state.gst);
   const total = quoteTotal();
   const gstAmt = gstAmount();
@@ -335,7 +363,7 @@ async function ensurePdfmake() {
 
 function buildPdfDef() {
   const c = state.company, cu = state.customer;
-  const gst = num(state.gst), disc = num(state.discount);
+  const gst = num(state.gst), disc = discountAmount();
   const showDims = state.showDims !== false, showSpec = state.showSpec !== false;
   const total = quoteTotal();
   const gstAmt = gstAmount();
@@ -495,7 +523,7 @@ async function downloadPdf() {
 
 /* ── View switching ── */
 function updateQuoteBar() {
-  const g = grandTotal(), t = quoteTotal(), gst = num(state.gst), disc = num(state.discount);
+  const g = grandTotal(), t = quoteTotal(), gst = num(state.gst), disc = discountAmount();
   $('#quoteTotal').textContent = fmt(g);
   let extra = '';
   if (disc > 0 || gst > 0) extra = `from ${fmt(t)}${disc > 0 ? ' − ' + fmt(disc) : ''}${gst ? ' + ' + gst + '% GST' : ''}`;
@@ -584,7 +612,7 @@ function loadSample() {
       { id: uid(), name: 'Electrical Wiring & Material', lump: true, rate: 100000 },
     ]},
   ];
-  state.discount = 36988;
+  state.finalCharge = 2200000;   // sample: ₹22,00,000 final → derived discount = 36,988
   state.customer = { name: '', phone: '', address: '' };
   save(); render();
 }
@@ -652,7 +680,7 @@ document.addEventListener('click', e => {
       break;
     case 'reset':
       if (confirm('Start a fresh quote? Current data will be cleared.')) {
-        state.sections = []; state.discount = 0; state.customer = { name: '', phone: '', address: '' };
+        state.sections = []; state.finalCharge = 0; state.customer = { name: '', phone: '', address: '' };
         save(); render();
       }
       break;
@@ -701,7 +729,7 @@ document.addEventListener('input', e => {
     if (parts[0] === 'quoteNo' && !t.value) t.value = autoQuoteNo();
   }
   else if (t.id === 'libSearch') renderLibrary(t.value);
-  else if (t.id === 'discount') { state.discount = num(t.value); }
+  else if (t.id === 'finalCharge') { state.finalCharge = num(t.value); }
   else if (t.id === 'gst') { state.gst = num(t.value); }
   else if (t.id === 'optDims') { state.showDims = t.checked; }
   else if (t.id === 'optSpec') { state.showSpec = t.checked; }

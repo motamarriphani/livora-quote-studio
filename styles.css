@@ -174,10 +174,11 @@ body {
   color: var(--faint); background: #fff; padding: 0 4px; text-transform: uppercase; z-index: 1;
 }
 .adj-field input {
-  width: 92px; border: 1px solid var(--line); border-radius: 9px; background: #fbfaf8;
+  width: 108px; border: 1px solid var(--line); border-radius: 9px; background: #fbfaf8;
   padding: 9px 8px 7px; font-size: 13px; text-align: center; font-family: inherit; color: var(--ink);
 }
 .adj-field input:focus { outline: none; border-color: var(--accent); background: #fff; }
+#finalCharge { width: 128px; }
 .sum-btns { display: flex; gap: 8px; }
 .bar-spacer { height: 24px; }
 
