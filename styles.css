@@ -336,7 +336,7 @@ body {
   .qs-spec-table { font-size: 9.5px; }
   .qs-spec-table td { padding: 3px 6px; line-height: 1.4; }
   .qs-spec-table tr { break-inside: avoid; }
-  .qs-sigs { margin-top: 30px; break-inside: avoid; }
+  .qs-sigs { margin-top: 120px; break-inside: avoid; }
   .qs-foot { margin-top: 12px; }
   .qs-brand { font-size: 24px; }
   .qs-cust { padding: 6px 10px; margin: 6px 0 10px; }

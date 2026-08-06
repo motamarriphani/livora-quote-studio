@@ -491,7 +491,9 @@ function buildPdfDef() {
           { text: 'For ' + c.name, alignment: 'center', fontSize: 9, bold: true },
           { text: 'Authorized Signatory', alignment: 'center', fontSize: 7.5, color: '#8a7d6f' },
         ] },
-      ], columnGap: 30 },
+      ], columnGap: 30,
+      // anchor the signature block to the lower half of the LAST page, after all info
+      absolutePosition: { x: 36, y: 690 } },
     ],
     styles: { th: { bold: true, color: '#fff', fillColor: INK, fontSize: 8 } },
   };
