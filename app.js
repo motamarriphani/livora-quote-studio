@@ -229,6 +229,7 @@ function renderLibrary(q = '') {
 function addSection(name = '') {
   const sec = { id: uid(), name: name || 'New Section', items: [], collapsed: false };
   state.sections.push(sec);
+  state.finalCharge = 0;   // item set changed → stale final amount must go
   save(); render();
   // jump straight into renaming the new room
   const el = document.querySelector(`.section-card[data-sec="${sec.id}"] .sec-name`);
@@ -241,6 +242,7 @@ function addItemFromLib(libId) {
   const sec = state.sections.find(s => s.id === libTarget);
   if (!sec) return;
   sec.items.push({ id: uid(), name: lib.name, w: lib.w ?? null, h: lib.h ?? null, rate: lib.rate, lump: !!lib.lump });
+  state.finalCharge = 0;   // item set changed → stale final amount must go
   save(); render();
 }
 function addCustomItem() {
@@ -251,6 +253,7 @@ function addCustomItem() {
   const sec = state.sections.find(s => s.id === libTarget);
   if (sec) sec.items.push(item);
   closeCustom();
+  state.finalCharge = 0;   // item set changed → stale final amount must go
   save(); render();
 }
 
@@ -645,6 +648,7 @@ document.addEventListener('click', e => {
       const sec = state.sections.find(s => s.id === btn.closest('.section-card').dataset.sec);
       if (sec && confirm('Delete "' + sec.name + '" and its items?')) {
         state.sections = state.sections.filter(s => s.id !== sec.id);
+        state.finalCharge = 0;   // item set changed → stale final amount must go
         save(); render();
       }
       break;
@@ -670,7 +674,7 @@ document.addEventListener('click', e => {
     case 'del-item': {
       const row = btn.closest('.item-row');
       const sec = state.sections.find(s => s.id === row.dataset.sec);
-      if (sec) { sec.items = sec.items.filter(i => i.id !== row.dataset.item); save(); render(); }
+      if (sec) { sec.items = sec.items.filter(i => i.id !== row.dataset.item); state.finalCharge = 0; save(); render(); }
       break;
     }
     case 'close-library': $('#libraryModal').classList.add('hidden'); break;
