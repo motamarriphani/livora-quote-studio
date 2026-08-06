@@ -190,7 +190,7 @@ function render() {
               <div class="sec-sub">${sec.items.length} item${sec.items.length === 1 ? '' : 's'} · ${fmt(tot)}</div>
             </div>
           </div>
-          <button class="icon-btn" data-action="del-sec" title="Delete section">🗑</button>
+          <button class="icon-btn" data-action="del-section" title="Delete section">🗑</button>
         </div>
         <div class="sec-body">
           ${rows || '<div style="color:var(--faint);font-size:12.5px;padding:10px 0 4px">No items yet — add from the library below.</div>'}
