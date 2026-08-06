@@ -66,6 +66,8 @@ let state = {
   timeline: '',
   terms: [...DEFAULT_TERMS],
   spec: DEFAULT_SPEC,
+  showDims: true,   // show H×W columns in quote table (preview + PDF)
+  showSpec: true,   // show Material Specification block (preview + PDF)
 };
 
 let libTarget = null; // section id receiving library adds
@@ -130,6 +132,8 @@ function load() {
       state.timeline = state.timeline || '';
       if (!Array.isArray(state.terms) || state.terms.length < 8) state.terms = [...DEFAULT_TERMS];
       if (!Array.isArray(state.spec) || !state.spec.length) state.spec = DEFAULT_SPEC.map(x => ({ ...x }));
+      if (typeof state.showDims !== 'boolean') state.showDims = true;
+      if (typeof state.showSpec !== 'boolean') state.showSpec = true;
       return true;
     }
   } catch (e) {}
@@ -232,24 +236,27 @@ function addCustomItem() {
 /* ── Quote template (final document) ── */
 function renderQuote() {
   const c = state.company, cu = state.customer;
+  const showDims = state.showDims !== false, showSpec = state.showSpec !== false;
+  const COLS = showDims ? 7 : 5;      // W+H columns removed → 5 cols
+  const SPAN = showDims ? 6 : 4;      // label span for subtotal/total rows
   let rows = '', sno = 0;
   state.sections.forEach(sec => {
     if (!sec.items.length) return;
-    rows += `<tr class="room-row"><td colspan="7">${esc(sec.name)}</td></tr>`;
+    rows += `<tr class="room-row"><td colspan="${COLS}">${esc(sec.name)}</td></tr>`;
     sec.items.forEach(it => {
       sno++;
       const box = it.lump ? '—' : (num(it.w) * num(it.h)).toLocaleString('en-IN', { maximumFractionDigits: 1 });
       rows += `<tr${it.lump ? ' class="lump-row"' : ''}>
         <td>${sno}</td>
         <td class="desc">${esc(it.name)}</td>
-        <td class="num">${it.lump ? '—' : esc(it.w)}</td>
-        <td class="num">${it.lump ? '—' : esc(it.h)}</td>
+        ${showDims ? `<td class="num">${it.lump ? '—' : esc(it.w)}</td>
+        <td class="num">${it.lump ? '—' : esc(it.h)}</td>` : ''}
         <td class="num">${box}</td>
         <td class="num">${fmt(it.rate)}</td>
         <td class="num">${fmt(itemAmount(it))}</td>
       </tr>`;
     });
-    rows += `<tr class="subtotal-row"><td colspan="6" style="text-align:right">Subtotal — ${esc(sec.name)} :</td><td class="num">${fmt(sectionTotal(sec))}</td></tr>`;
+    rows += `<tr class="subtotal-row"><td colspan="${SPAN}" style="text-align:right">Subtotal — ${esc(sec.name)} :</td><td class="num">${fmt(sectionTotal(sec))}</td></tr>`;
   });
   const disc = num(state.discount);
   const gst = num(state.gst);
@@ -275,12 +282,12 @@ function renderQuote() {
     </div>
     <div class="qs-cust"><span class="lbl">CUSTOMER NAME &amp; ADDRESS :</span> ${esc([cu.name, cu.address].filter(Boolean).join(', '))}${cu.phone ? ' — Ph: ' + esc(cu.phone) : ''}</div>
     <table class="qs-table">
-      <thead><tr><th style="width:36px">S.No</th><th>Description</th><th style="width:44px">W</th><th style="width:44px">H</th><th style="width:56px">BOX</th><th style="width:74px">Rate</th><th style="width:86px">Amount</th></tr></thead>
+      <thead><tr><th style="width:36px">S.No</th><th>Description</th>${showDims ? '<th style="width:44px">W</th><th style="width:44px">H</th>' : ''}<th style="width:56px">BOX</th><th style="width:74px">Rate</th><th style="width:86px">Amount</th></tr></thead>
       <tbody>${rows}
-        <tr class="qs-total-row"><td colspan="6" style="text-align:right">TOTAL :</td><td class="num">${fmt(total)}</td></tr>
-        ${disc ? `<tr class="qs-total-row"><td colspan="6" style="text-align:right">DISCOUNT :</td><td class="num">− ${fmt(disc)}</td></tr>` : ''}
-        ${gst ? `<tr class="qs-total-row"><td colspan="6" style="text-align:right">GST @ ${gst}% :</td><td class="num">+ ${fmt(gstAmt)}</td></tr>` : ''}
-        <tr class="qs-grand"><td colspan="6" style="text-align:right">GRAND TOTAL :</td><td class="num">${fmt(grand)}</td></tr>
+        <tr class="qs-total-row"><td colspan="${SPAN}" style="text-align:right">TOTAL :</td><td class="num">${fmt(total)}</td></tr>
+        ${disc ? `<tr class="qs-total-row"><td colspan="${SPAN}" style="text-align:right">DISCOUNT :</td><td class="num">− ${fmt(disc)}</td></tr>` : ''}
+        ${gst ? `<tr class="qs-total-row"><td colspan="${SPAN}" style="text-align:right">GST @ ${gst}% :</td><td class="num">+ ${fmt(gstAmt)}</td></tr>` : ''}
+        <tr class="qs-grand"><td colspan="${SPAN}" style="text-align:right">GRAND TOTAL :</td><td class="num">${fmt(grand)}</td></tr>
       </tbody>
     </table>
     <div class="qs-words"><span class="lbl">AMOUNT IN WORDS :</span> ${esc(amountInWords(grand))}</div>
@@ -288,12 +295,13 @@ function renderQuote() {
       <h4>Note — Terms &amp; Conditions</h4>
       <ol class="qs-terms">${getTerms().map((t, i) => `<li><span class="n">${i + 1}</span><span>${esc(t)}</span></li>`).join('')}</ol>
     </div>
+    ${showSpec ? `
     <div class="qs-spec">
       <h4>Material Specification</h4>
       <table class="qs-spec-table">
         ${state.spec.map(s => `<tr><td class="spec-c">${esc(s.c)}</td><td>${esc(s.d)}</td></tr>`).join('')}
       </table>
-    </div>
+    </div>` : ''}
     <div class="qs-sigs">
       <div class="qs-sig">CUSTOMER NAME<small>Signature</small></div>
       <div class="qs-sig">For ${esc(c.name)}<small>Authorized Signatory</small></div>
@@ -328,37 +336,47 @@ async function ensurePdfmake() {
 function buildPdfDef() {
   const c = state.company, cu = state.customer;
   const gst = num(state.gst), disc = num(state.discount);
+  const showDims = state.showDims !== false, showSpec = state.showSpec !== false;
   const total = quoteTotal();
   const gstAmt = gstAmount();
   const grand = grandTotal();
   const INK = '#241d16', ACCENT = '#a05a2c', ACCENT_BG = '#f3e7db';
   const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
+  const SPAN = showDims ? 6 : 4;      // label span for subtotal/total rows
 
   const body = [];
   let sno = 0;
   state.sections.forEach(sec => {
     if (!sec.items.length) return;
-    body.push([{ text: sec.name.toUpperCase(), colSpan: 7, fillColor: ACCENT_BG, bold: true, fontSize: 8.5, color: INK, margin: [0, 3, 0, 3] }, {}, {}, {}, {}, {}, {}]);
+    const secCells = showDims ? 7 : 5;
+    body.push([{ text: sec.name.toUpperCase(), colSpan: secCells, fillColor: ACCENT_BG, bold: true, fontSize: 8.5, color: INK, margin: [0, 3, 0, 3] }, ...Array(secCells - 1).fill({})]);
     sec.items.forEach(it => {
       sno++;
       const box = it.lump ? '—' : (num(it.w) * num(it.h)).toLocaleString('en-IN', { maximumFractionDigits: 1 });
-      body.push([
+      const row = [
         { text: String(sno), alignment: 'center' },
         { text: it.name },
-        { text: it.lump ? '—' : (it.w ?? ''), alignment: 'center' },
-        { text: it.lump ? '—' : (it.h ?? ''), alignment: 'center' },
+      ];
+      if (showDims) {
+        row.push(
+          { text: it.lump ? '—' : (it.w ?? ''), alignment: 'center' },
+          { text: it.lump ? '—' : (it.h ?? ''), alignment: 'center' },
+        );
+      }
+      row.push(
         { text: box, alignment: 'center' },
         { text: inr(it.rate), alignment: 'right' },
         { text: inr(itemAmount(it)), alignment: 'right', bold: true },
-      ]);
+      );
+      body.push(row);
     });
-    body.push([{ text: 'Subtotal — ' + sec.name, colSpan: 6, alignment: 'right', bold: true, italics: true, fontSize: 8 }, {}, {}, {}, {}, {}, { text: inr(sectionTotal(sec)), alignment: 'right', bold: true }]);
+    body.push([{ text: 'Subtotal — ' + sec.name, colSpan: SPAN, alignment: 'right', bold: true, italics: true, fontSize: 8 }, ...Array(SPAN - 1).fill({}), { text: inr(sectionTotal(sec)), alignment: 'right', bold: true }]);
   });
 
-  body.push([{ text: 'TOTAL', colSpan: 6, alignment: 'right', bold: true }, {}, {}, {}, {}, {}, { text: inr(total), alignment: 'right', bold: true }]);
-  if (disc) body.push([{ text: 'DISCOUNT', colSpan: 6, alignment: 'right', bold: true }, {}, {}, {}, {}, {}, { text: '− ' + inr(disc), alignment: 'right', bold: true }]);
-  if (gst) body.push([{ text: 'GST @ ' + gst + '%', colSpan: 6, alignment: 'right', bold: true }, {}, {}, {}, {}, {}, { text: '+ ' + inr(gstAmt), alignment: 'right', bold: true }]);
-  body.push([{ text: 'GRAND TOTAL', colSpan: 6, alignment: 'right', bold: true, color: '#fff', fillColor: INK }, {}, {}, {}, {}, {}, { text: inr(grand), alignment: 'right', bold: true, color: '#fff', fillColor: INK }]);
+  body.push([{ text: 'TOTAL', colSpan: SPAN, alignment: 'right', bold: true }, ...Array(SPAN - 1).fill({}), { text: inr(total), alignment: 'right', bold: true }]);
+  if (disc) body.push([{ text: 'DISCOUNT', colSpan: SPAN, alignment: 'right', bold: true }, ...Array(SPAN - 1).fill({}), { text: '− ' + inr(disc), alignment: 'right', bold: true }]);
+  if (gst) body.push([{ text: 'GST @ ' + gst + '%', colSpan: SPAN, alignment: 'right', bold: true }, ...Array(SPAN - 1).fill({}), { text: '+ ' + inr(gstAmt), alignment: 'right', bold: true }]);
+  body.push([{ text: 'GRAND TOTAL', colSpan: SPAN, alignment: 'right', bold: true, color: '#fff', fillColor: INK }, ...Array(SPAN - 1).fill({}), { text: inr(grand), alignment: 'right', bold: true, color: '#fff', fillColor: INK }]);
 
   return {
     pageSize: 'A4',
@@ -397,9 +415,11 @@ function buildPdfDef() {
       { table: {
           headerRows: 1,
           dontBreakRows: true,
-          widths: [24, '*', 28, 28, 42, 62, 80],
+          widths: showDims ? [24, '*', 28, 28, 42, 62, 80] : [24, '*', 42, 62, 80],
           body: [
-            [{ text: 'S.NO', style: 'th' }, { text: 'DESCRIPTION', style: 'th' }, { text: 'W', style: 'th', alignment: 'center' }, { text: 'H', style: 'th', alignment: 'center' }, { text: 'BOX', style: 'th', alignment: 'center' }, { text: 'FRAME RATE', style: 'th', alignment: 'right' }, { text: 'AMOUNT', style: 'th', alignment: 'right' }],
+            showDims
+              ? [{ text: 'S.NO', style: 'th' }, { text: 'DESCRIPTION', style: 'th' }, { text: 'W', style: 'th', alignment: 'center' }, { text: 'H', style: 'th', alignment: 'center' }, { text: 'BOX', style: 'th', alignment: 'center' }, { text: 'FRAME RATE', style: 'th', alignment: 'right' }, { text: 'AMOUNT', style: 'th', alignment: 'right' }]
+              : [{ text: 'S.NO', style: 'th' }, { text: 'DESCRIPTION', style: 'th' }, { text: 'BOX', style: 'th', alignment: 'center' }, { text: 'FRAME RATE', style: 'th', alignment: 'right' }, { text: 'AMOUNT', style: 'th', alignment: 'right' }],
             ...body,
           ],
         },
@@ -417,26 +437,28 @@ function buildPdfDef() {
       { text: 'AMOUNT IN WORDS : ' + amountInWords(grand), fontSize: 9.5, bold: true, margin: [0, 0, 0, 6] },
       { text: 'NOTE — TERMS & CONDITIONS', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 2, 0, 3] },
       { ol: getTerms().map(t => ({ text: t, fontSize: 8.5, margin: [0, 1.2, 0, 1.2] })), margin: [0, 0, 0, 4] },
-      { text: 'MATERIAL SPECIFICATION', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 6, 0, 3] },
-      { table: {
-          dontBreakRows: true,
-          widths: [118, '*'],
-          body: state.spec.map(s => [
-            { text: s.c.toUpperCase(), bold: true, fontSize: 7.8, fillColor: ACCENT_BG, color: INK, margin: [4, 3, 4, 3] },
-            { text: s.d, fontSize: 8.2, margin: [4, 3, 4, 3] },
-          ]),
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => '#c9bfb2',
-          vLineColor: () => '#c9bfb2',
-          paddingTop: () => 0,
-          paddingBottom: () => 0,
-          paddingLeft: () => 0,
-          paddingRight: () => 0,
-        },
-        margin: [0, 0, 0, 6] },
+      ...(showSpec ? [
+        { text: 'MATERIAL SPECIFICATION', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 6, 0, 3] },
+        { table: {
+            dontBreakRows: true,
+            widths: [118, '*'],
+            body: state.spec.map(s => [
+              { text: s.c.toUpperCase(), bold: true, fontSize: 7.8, fillColor: ACCENT_BG, color: INK, margin: [4, 3, 4, 3] },
+              { text: s.d, fontSize: 8.2, margin: [4, 3, 4, 3] },
+            ]),
+          },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0.5,
+            hLineColor: () => '#c9bfb2',
+            vLineColor: () => '#c9bfb2',
+            paddingTop: () => 0,
+            paddingBottom: () => 0,
+            paddingLeft: () => 0,
+            paddingRight: () => 0,
+          },
+          margin: [0, 0, 0, 6] },
+      ] : []),
       { columns: [
         { width: '*', stack: [
           { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.8, lineColor: INK }], margin: [0, 30, 0, 5] },
@@ -617,6 +639,12 @@ document.addEventListener('click', e => {
     case 'add-custom': addCustomItem(); break;
     case 'preview': showQuote(); break;
     case 'back-to-builder': showBuilder(); break;
+    case 'quote-options':
+      $('#optDims').checked = state.showDims !== false;
+      $('#optSpec').checked = state.showSpec !== false;
+      $('#optionsModal').classList.remove('hidden');
+      break;
+    case 'close-options': $('#optionsModal').classList.add('hidden'); break;
     case 'print': window.print(); break;
     case 'download-pdf': downloadPdf(); break;
     case 'sample':
@@ -675,8 +703,14 @@ document.addEventListener('input', e => {
   else if (t.id === 'libSearch') renderLibrary(t.value);
   else if (t.id === 'discount') { state.discount = num(t.value); }
   else if (t.id === 'gst') { state.gst = num(t.value); }
+  else if (t.id === 'optDims') { state.showDims = t.checked; }
+  else if (t.id === 'optSpec') { state.showSpec = t.checked; }
 
   save(); renderSummary();
+  if (t.id === 'optDims' || t.id === 'optSpec') {
+    const quote = $('#quote');
+    if (quote && !quote.classList.contains('hidden')) renderQuote();
+  }
 });
 
 function autoQuoteNo() {

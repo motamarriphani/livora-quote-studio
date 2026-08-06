@@ -77,6 +77,7 @@
 <!-- ══════════════ QUOTE VIEW (final template) ══════════════ -->
 <div id="quote" class="quote-view hidden">
   <button class="quote-close" data-action="back-to-builder" title="Close preview">✕</button>
+  <button class="quote-options" data-action="quote-options" title="Quote display options">⚙</button>
   <div id="quoteSheet" class="quote-sheet"></div>
   <div class="quote-actions">
     <div class="quote-total">
@@ -123,6 +124,26 @@
     <input id="cRate" class="field" type="number" placeholder="Rate (₹/sqft)" step="1" min="0">
     <label class="check"><input id="cLump" type="checkbox"> Lump sum (no W×H — e.g. painting, electrical)</label>
     <button class="btn primary full" data-action="add-custom">Add item</button>
+  </div>
+</div>
+
+<!-- ══════════════ DISPLAY OPTIONS MODAL ══════════════ -->
+<div id="optionsModal" class="modal hidden">
+  <div class="modal-backdrop" data-action="close-options"></div>
+  <div class="modal-sheet small">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Quote display options</div>
+        <div class="modal-sub">These apply to the preview &amp; the downloaded PDF</div>
+      </div>
+      <button class="icon-btn" data-action="close-options">✕</button>
+    </div>
+    <label class="check opt-row"><input id="optDims" type="checkbox"> Show H × W (dimensions)</label>
+    <label class="check opt-row"><input id="optSpec" type="checkbox"> Show material specifications</label>
+    <div class="modal-hint">Turned-off sections are removed from both the preview and the PDF.</div>
+    <div class="modal-foot">
+      <button class="btn primary full" data-action="close-options">Done</button>
+    </div>
   </div>
 </div>
 
