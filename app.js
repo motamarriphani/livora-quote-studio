@@ -86,30 +86,23 @@ function fmtDate(iso) {
 function itemAmount(it) { return it.lump ? num(it.rate) : num(it.w) * num(it.h) * num(it.rate); }
 function sectionTotal(sec) { return sec.items.reduce((s, it) => s + itemAmount(it), 0); }
 function quoteTotal() { return state.sections.reduce((s, sec) => s + sectionTotal(sec), 0); }
-// The client-facing number is the FINAL CHARGE (grand total, incl. GST).
-// Discount is derived: it's whatever we're giving off the raw quote total.
+// The client-facing number is the FINAL CHARGE — the agreed amount AFTER discount,
+// BEFORE GST (e.g. ₹22,00,000). Discount is derived (total − final), GST is
+// calculated separately on the final amount, exactly like the printed quotation.
 function taxableBase() {
   const f = num(state.finalCharge);
-  if (!f) return quoteTotal();            // no final charge entered → no discount
-  const g = num(state.gst);
-  return g > 0 ? f / (1 + g / 100) : f;   // strip GST → pre-GST agreed amount
+  return f > 0 ? f : quoteTotal();   // no final charge entered → full price, no discount
 }
 function discountAmount() {
   const f = num(state.finalCharge);
   if (!f) return 0;
-  return Math.max(0, quoteTotal() - taxableBase());
+  return Math.max(0, quoteTotal() - f);
 }
 function gstAmount() {
   const g = num(state.gst);
-  if (!g) return 0;
-  const f = num(state.finalCharge);
-  if (f) return Math.round(f - taxableBase());   // GST = final − base (exact)
-  return Math.round(taxableBase() * g / 100);
+  return g ? Math.round(taxableBase() * g / 100) : 0;
 }
-function grandTotal() {
-  const f = num(state.finalCharge);
-  return f ? Math.round(f) : taxableBase() + gstAmount();
-}
+function grandTotal() { return taxableBase() + gstAmount(); }
 function itemCount() { return state.sections.reduce((s, sec) => s + sec.items.length, 0); }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function getTerms() {
