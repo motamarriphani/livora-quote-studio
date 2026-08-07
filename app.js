@@ -535,11 +535,12 @@ async function downloadPdf() {
   }
 }
 
-/* ── Smart PDF filename: LIVORA-Quotation-<client>-<DD-MM-YYYY>.pdf ── */
+/* ── Smart PDF filename: LIVORA-Quotation-<client or quote no>-<DD-MM-YYYY>.pdf ── */
+// No client name? Use the quote no — multiple quotes per day must not collide.
 function pdfFileName() {
   const d = fmtDate(state.date) || todayStr();
-  const who = (state.customer.name || '').trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
-  return 'LIVORA-Quotation' + (who ? '-' + who : '') + '-' + d + '.pdf';
+  const id = (state.customer.name || state.quoteNo || '').trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+  return 'LIVORA-Quotation' + (id ? '-' + id : '') + '-' + d + '.pdf';
 }
 
 /* ── View switching ── */
