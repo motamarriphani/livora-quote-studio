@@ -525,8 +525,7 @@ async function downloadPdf() {
   try {
     await ensurePdfmake();
     const dd = buildPdfDef();
-    const file = 'Quotation_' + (state.quoteNo || state.date).replace(/[^a-zA-Z0-9_-]/g, '') + '.pdf';
-    pdfMake.createPdf(dd).download(file);
+    pdfMake.createPdf(dd).download(pdfFileName());
   } catch (e) {
     console.error(e);
     alert('Could not generate the PDF (offline?). Using Print instead — choose "Save as PDF" there.');
@@ -534,6 +533,13 @@ async function downloadPdf() {
   } finally {
     if (btn) { btn.textContent = '⬇ Download PDF'; btn.disabled = false; }
   }
+}
+
+/* ── Smart PDF filename: LIVORA-Quotation-<client>-<DD-MM-YYYY>.pdf ── */
+function pdfFileName() {
+  const d = fmtDate(state.date) || todayStr();
+  const who = (state.customer.name || '').trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+  return 'LIVORA-Quotation' + (who ? '-' + who : '') + '-' + d + '.pdf';
 }
 
 /* ── View switching ── */
