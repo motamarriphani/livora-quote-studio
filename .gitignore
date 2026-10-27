@@ -21,3 +21,6 @@ _staging/
 
 # deploy staging output
 public/
+
+# React app build output
+web/dist/

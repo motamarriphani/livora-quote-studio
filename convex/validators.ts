@@ -114,7 +114,9 @@ export const quoteSummaryValidator = v.object({
   gstAmt: v.number(),
   grand: v.number(),
   itemCount: v.number(),
-  status: v.string(),
+  status: v.string(), // effective status ('expired' replaces 'sent' past validity)
+  storedStatus: v.optional(v.string()), // what the user set: draft/sent/accepted/declined
+  expired: v.optional(v.boolean()),
   updatedAt: v.number(),
   deletedAt: v.optional(v.number()),
 });

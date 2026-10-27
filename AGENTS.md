@@ -4,6 +4,10 @@ Mobile-first quote builder for LIVORA Interiors with accounts and cloud sync. St
 
 This is the **accounts edition**. The original no-login site lives in a separate repo (`livora quotation`, deployed at https://livora-quote.pages.dev). Do not mix the two.
 
+## React rewrite (in progress, branch `react-rewrite`)
+
+`web/` is the new frontend: Vite + React + TypeScript, Convex React hooks, Clerk React, pdfmake/pdf.js loaded lazily. It is **online-only** (no local-first sync); the cloud copy is the truth. Scripts: `npm run web:dev` (http://localhost:8131), `web:test`, `web:typecheck`, `web:build` (→ `web/dist`). It talks to the same Convex deployment as the live app, so backend changes must stay backwards-compatible until the old frontend is retired. The old vanilla app (root `index.html`, `app.js`, `cloud.js`) still deploys from `main` unchanged.
+
 ## Deploy (IMPORTANT)
 
 - **Frontend** → Cloudflare Pages project `accounts-livora` (https://accounts-livora.pages.dev). It is a **Direct Upload** project (no Git integration), so `git push` alone does NOT deploy. Deploy with `npm run deploy` or the GitHub Actions workflow (`.github/workflows/deploy.yml`, runs on push to `main` once the repo secrets are set).

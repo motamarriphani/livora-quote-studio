@@ -3,10 +3,11 @@ import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { requireSubject, getCompanyForUser } from './common';
 
+// Same rule as quotes.ts: only a sent quote can expire.
 function effectiveStatus(quote: { status?: string; date: string; validityDays: number }) {
-  if (quote.status === 'accepted' || quote.status === 'declined') return quote.status;
+  if (quote.status !== 'sent') return quote.status || 'draft';
   const expiry = new Date(quote.date + 'T23:59:59').getTime() + quote.validityDays * 86400000;
-  return expiry < Date.now() ? 'expired' : (quote.status || 'draft');
+  return expiry < Date.now() ? 'expired' : 'sent';
 }
 import { clientSummaryValidator } from './validators';
 
@@ -214,15 +215,14 @@ export const saveClient = mutation({
           throw new Error('Merge target not found');
         }
         // Deliberate merge: every quote of this client moves to the survivor,
-        // the survivor keeps the latest edited details, and this record dies.
+        // the survivor keeps its own name and details (only blanks are filled
+        // from this record), and this record dies.
         await moveQuotes(ctx.db, company._id, id, mergeIntoId);
         await moveNameKeyQuotes(ctx.db, company._id, existing.nameKey, mergeIntoId);
         await ctx.db.patch(target._id, {
-          name: clean,
-          nameKey: clean.toLowerCase(),
-          phone: phone || target.phone || '',
-          address: address || target.address || '',
-          lastQuotedAt: Date.now(),
+          phone: target.phone || phone || '',
+          address: target.address || address || '',
+          lastQuotedAt: Math.max(target.lastQuotedAt, existing.lastQuotedAt),
         });
         await ctx.db.delete(id);
         return { id: mergeIntoId };
