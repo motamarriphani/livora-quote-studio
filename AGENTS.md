@@ -1,45 +1,42 @@
-# AGENTS.md — LIVORA Quote Studio (accounts edition, v2.2)
+# AGENTS.md — LIVORA Quote Studio (v3, React)
 
-Mobile-first quote builder for LIVORA Interiors with accounts and cloud sync. Static frontend (vanilla HTML/CSS/JS, no build step) + Convex backend + Clerk login. Users build quotes on their phones during client calls, then download a PDF quotation.
+Mobile-first quote builder for LIVORA Interiors. Designers build quotes on their phones during client calls and download a PDF quotation. Frontend: Vite + React + TypeScript in `web/`. Backend: Convex in `convex/`. Login: Clerk.
 
 This is the **accounts edition**. The original no-login site lives in a separate repo (`livora quotation`, deployed at https://livora-quote.pages.dev). Do not mix the two.
 
-## Deploy (IMPORTANT)
+## Decisions (keep to these)
 
-- **Frontend** → Cloudflare Pages project `accounts-livora` (https://accounts-livora.pages.dev). It is a **Direct Upload** project (no Git integration), so `git push` alone does NOT deploy. Deploy with `npm run deploy` or the GitHub Actions workflow (`.github/workflows/deploy.yml`, runs on push to `main` once the repo secrets are set).
-- **Never deploy the repo root.** It contains `.env.local` (Clerk secret key), `convex/` sources, QA scripts and review notes — anything in the uploaded folder is publicly downloadable. `npm run stage` copies only the browser files (`index.html`, `styles.css`, `app.js`, `cloud.js`, `quote-math.js`, `vendor/`) into `public/`; deploy that folder only.
-- **Backend** → Convex, deployed separately: `npm run convex:deploy`.
-- Never commit secrets or client PII. `.env.local` is gitignored; keep it that way.
-
-## Workflow for changes
-
-1. Edit files locally.
-2. `npm test` (static checks: syntax of app/cloud/convex files, math unit tests).
-3. Run locally: `npm run dev` → http://localhost:8130 (backend work: `npm run convex:dev` in a second terminal).
-4. Commit and push to `main`.
-5. Deploy: `npm run deploy` (stages `public/`, then `wrangler pages deploy`). Verify with `curl -sL -A "Mozilla/5.0" https://accounts-livora.pages.dev/ | grep <changed-marker>`, and confirm `https://accounts-livora.pages.dev/.env.local` does not return the secrets file.
-6. If `convex/` changed, also `npm run convex:deploy`.
-
-When changing cached assets, bump the `?v=NN` query strings in `index.html`.
+- **Online-only.** The cloud copy is the truth; there is no offline/local-first sync. Short connection drops are covered by the Convex client queueing mutations while the page is open, and a banner says so. Don't add IndexedDB, service workers or outbox sync unless asked.
+- **One editor owns one quote.** `web/src/lib/useQuoteEditor.ts` autosaves ~1 s after edits and flushes pending saves when you leave. Never share a mutable "current quote" across screens.
+- **Quote numbers are issued by the server** on the first save, and a quote is only saved once it has at least one item (no numbers burned by empty drafts; the sample quote is never saved).
+- **Client book changes only on explicit actions:** picking/adding a client, or preview/download (`saveQuote` with `autoBook: true`). Autosave sends `autoBook: false`.
+- **Sent/accepted/declined quotes are locked** behind "Create a revision" (a new draft copy) or "Edit anyway". Only sent quotes can expire (derived from date + validity, never stored).
+- **Money math** lives in `web/src/lib/math.ts`. An agreed subtotal above the calculated total is never used or stored as a discount; the PDF totals block must always reconcile (TOTAL − DISCOUNT = SUBTOTAL, + GST = GRAND TOTAL).
+- **Catalog = defaults for new quotes.** Existing quotes keep their own terms/specification; each quote's terms/spec are editable in the builder.
 
 ## Structure
 
-- `index.html` — login overlay, app shell (sidebar, dashboard, clients), builder view, quote template view, modals
-- `styles.css` — design system + `@media print` A4 rules (the print block MUST stay at the END of the file)
-- `app.js` — state, catalog UI, dashboard/clients/history, rendering, totals, pdfmake PDF generation, delegated click handler (`data-action`)
-- `cloud.js` — Clerk sign-in + Convex sync bridge (local-first, debounced push, conflict handling)
-- `quote-math.js` — pure money math (UMD, shared with the Node tests and the PDF harness)
-- `convex/` — backend: `schema.ts`, `validators.ts`, `common.ts`, `company.ts`, `catalog.ts`, `clients.ts`, `quotes.ts` (every function is auth-gated; the tenant is derived from the signed-in user, never from client input)
-- `vendor/` — Clerk and Convex browser SDKs, bundled (no CDN for login/cloud; pdfmake still loads from CDN with fallback)
-- `scripts/` — `verify.mjs` (`npm test`), `unit.mjs`, `stage-public.mjs` (deploy staging)
-- `.qa/` — browser-driven QA phases; `REVIEW-ACCOUNTS.md` / `TESTING-ACCOUNTS.md` — Aug 2026 review and test plan (all review findings verified fixed as of Oct 2026)
+- `web/src/main.tsx` — providers (Clerk, Convex, router, UI). Clerk key / Convex URL come from `VITE_CLERK_PUBLISHABLE_KEY` / `VITE_CONVEX_URL`, falling back to the development values.
+- `web/src/App.tsx` — sign-in, workspace bootstrap (`company:ensureCompany`), sidebar, routes, connection banner.
+- `web/src/pages/` — `Dashboard` (quotes list + stats), `Builder` (editor, preview, version history), `Preview` (PDF preview + sample), `Clients`, `Catalog` (rate card, specifications, default terms), `Trash` (deleted quotes).
+- `web/src/components/` — client picker/form, item library, number field.
+- `web/src/lib/` — `types`, `math`, `format`, `defaults` (letterhead `COMPANY`, seed catalog, sample, new/copy quote, printed terms), `convert` (Convex doc ↔ editor quote, save payload), `pdf` (pdfmake definition + pdf.js preview, both lazy-loaded), `useQuoteEditor`.
+- `web/src/styles.css` (design system) + `web/src/app.css` (React-specific additions).
+- `convex/` — `schema.ts`, `validators.ts`, `common.ts`, `company.ts`, `catalog.ts`, `clients.ts`, `quotes.ts`. Every function is auth-gated; the tenant is derived from the signed-in user, never from client input.
+- `scripts/verify.mjs` — `npm test`.
+- `REVIEW-ACCOUNTS.md`, `TESTING-ACCOUNTS.md` — historical notes about the v2 (vanilla JS) app; not current.
 
-## App behavior notes
+## Workflow for changes
 
-- Local-first: saves to localStorage on every change, then pushes to Convex after a short debounce. Works offline.
-- Quote numbers: `LQ-YYYY-NNN`, issued by the server on first cloud save (counter lives on the company doc, so concurrent issues serialize). The browser only shows a temporary placeholder until then.
-- Edits are version-checked; a stale save raises the conflict flow (reload cloud version / keep mine as a copy / merge).
-- Quotes have a status (draft, sent, accepted, declined; expiry is derived from date + validity), version snapshots with restore, and soft delete with restore.
-- Item math: amount = W × H × rate (sqft); lump items = flat amount. Discount is derived from the agreed final charge; GST is calculated separately on the final amount.
-- `?print=1` → print-ready quote; `?preview=1` → interactive preview; both skip login and cloud.
-- Data model: sections (rooms) with items {name, w, h, rate, lump}; customer (+ clientId); finalCharge; gst %; validityDays; timeline; terms[]; spec[{c,d}].
+1. `npm install`, then `npm run dev` → http://localhost:8130 (backend work: `npm run convex:dev` in a second terminal).
+2. `npm test` — typechecks `web/` and `convex/`, runs unit tests (`web/src/**/*.test.ts`), checks backend invariants.
+3. Commit and push. **Pushing to `main` deploys** (GitHub Actions) once the repo secrets are set.
+
+## Deploy (IMPORTANT)
+
+- **Frontend** → Cloudflare Pages project `accounts-livora` (https://accounts-livora.pages.dev), a Direct Upload project. `npm run deploy` runs the checks, builds, and uploads **only `web/dist`**. The GitHub workflow (`.github/workflows/deploy.yml`) does the same on push to `main`. Never upload the repo root (it has `.env.local` with the Clerk secret key).
+- Cloudflare Pages serves `index.html` for unknown paths (no `404.html` in the build), so client-side routes like `/quotes/<id>` work on reload.
+- Verify after deploying: open https://accounts-livora.pages.dev, sign in, open a quote; confirm `https://accounts-livora.pages.dev/.env.local` does not return the secrets file.
+- **Backend** → Convex, deployed separately. Note: `.env.local` points `npx convex dev` at the **dev** deployment `careful-badger-891`, which is also what the site uses today, so `convex dev` changes production data's backend immediately. Keep backend changes backwards-compatible with the deployed frontend.
+- **Before real production use:** create a Clerk production instance and set its publishable key (repo variable `CLERK_PUBLISHABLE_KEY`); consider a separate Convex production deployment (`CONVEX_URL`).
+- Never commit secrets or client PII. `.env.local` is gitignored; keep it that way.

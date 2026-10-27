@@ -19,5 +19,6 @@ Thumbs.db
 _scratch/
 _staging/
 
-# deploy staging output
-public/
+
+# build output
+web/dist/

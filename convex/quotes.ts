@@ -19,10 +19,16 @@ import {
 // auto-retries on conflict. No double-issue, ever.
 type Company = Awaited<ReturnType<typeof getCompanyForUser>>;
 
-function effectiveStatus(quote: { status?: string; date: string; validityDays: number }) {
-  if (quote.status === 'accepted' || quote.status === 'declined') return quote.status;
+// Only a quote that was actually sent can expire — a draft was never offered
+// to the client, and accepted/declined are final.
+function isExpired(quote: { status?: string; date: string; validityDays: number }) {
+  if (quote.status !== 'sent') return false;
   const expiry = new Date(quote.date + 'T23:59:59').getTime() + quote.validityDays * 86400000;
-  return expiry < Date.now() ? 'expired' : (quote.status || 'draft');
+  return expiry < Date.now();
+}
+
+function effectiveStatus(quote: { status?: string; date: string; validityDays: number }) {
+  return isExpired(quote) ? 'expired' : (quote.status || 'draft');
 }
 
 const quoteListReturns = v.object({
@@ -162,6 +168,8 @@ export const listQuotes = query({
       grand: number;
       itemCount: number;
       status: string;
+      storedStatus: string;
+      expired: boolean;
       updatedAt: number;
     }[] = [];
     let cur: string | null = cursor ?? null;
@@ -196,6 +204,8 @@ export const listQuotes = query({
           grand: q.grand,
           itemCount: q.itemCount,
           status: currentStatus,
+          storedStatus: q.status || 'draft',
+          expired: currentStatus === 'expired',
           updatedAt: q.updatedAt,
         });
         if (matched.length >= pageSize) break;
@@ -208,14 +218,25 @@ export const listQuotes = query({
 // Dashboard stats — computed over ALL quotes (never truncated by pagination).
 export const getStats = query({
   args: { month: v.string() }, // client-local YYYY-MM (server clock may be UTC)
-  returns: v.object({ monthCount: v.number(), monthValue: v.number(), openCount: v.number() }),
+  // monthValue/openCount are kept for the legacy frontend. The newer fields
+  // count only what is meaningful: quotes awaiting the client's answer
+  // (sent, not expired) and work actually won this month.
+  returns: v.object({
+    monthCount: v.number(), monthValue: v.number(), openCount: v.number(),
+    awaitingCount: v.optional(v.number()), awaitingValue: v.optional(v.number()),
+    acceptedMonthCount: v.optional(v.number()), acceptedMonthValue: v.optional(v.number()),
+  }),
   handler: async (ctx, { month }) => {
     const subject = await requireSubject(ctx);
     const company = await getCompanyForUser(ctx, subject);
-    if (!company) return { monthCount: 0, monthValue: 0, openCount: 0 };
+    if (!company) return { monthCount: 0, monthValue: 0, openCount: 0, awaitingCount: 0, awaitingValue: 0, acceptedMonthCount: 0, acceptedMonthValue: 0 };
     let monthCount = 0;
     let monthValue = 0;
     let openCount = 0;
+    let awaitingCount = 0;
+    let awaitingValue = 0;
+    let acceptedMonthCount = 0;
+    let acceptedMonthValue = 0;
     let cursor: string | null = null;
     let done = false;
     while (!done) {
@@ -232,10 +253,19 @@ export const getStats = query({
           monthCount++;
           monthValue += q.grand || 0;
         }
-        if (effectiveStatus(q) === 'draft' || effectiveStatus(q) === 'sent') openCount++;
+        const status = effectiveStatus(q);
+        if (status === 'draft' || status === 'sent') openCount++;
+        if (status === 'sent') {
+          awaitingCount++;
+          awaitingValue += q.grand || 0;
+        }
+        if (status === 'accepted' && (q.date || '').startsWith(month)) {
+          acceptedMonthCount++;
+          acceptedMonthValue += q.grand || 0;
+        }
       }
     }
-    return { monthCount, monthValue, openCount };
+    return { monthCount, monthValue, openCount, awaitingCount, awaitingValue, acceptedMonthCount, acceptedMonthValue };
   },
 });
 
@@ -305,6 +335,10 @@ export const saveQuote = mutation({
     grand: v.number(),
     itemCount: v.number(),
     status: quoteStatusValidator,
+    // false = save the quote only; never create or rewrite client-book
+    // records (the builder autosaves while a name is still being typed).
+    // Omitted = legacy behaviour: auto-book the customer on every save.
+    autoBook: v.optional(v.boolean()),
   },
   returns: saveQuoteReturns,
   handler: async (ctx, args) => {
@@ -348,11 +382,23 @@ export const saveQuote = mutation({
     }
     const issuedNo = existing?.quoteNo ?? (quoteNo as string);
 
-    const client = await resolveClient(ctx.db, company, args, updatedAt);
+    let clientId: Id<'clients'> | undefined;
+    if (args.autoBook === false) {
+      if (args.clientId) {
+        const linked = await ctx.db.get(args.clientId);
+        if (!linked || linked.companyId !== company._id) {
+          throw new ConvexError({ code: 'CLIENT_NOT_FOUND', message: 'That client no longer exists — pick another or type the name directly.' });
+        }
+        clientId = linked._id;
+      }
+    } else {
+      const client = await resolveClient(ctx.db, company, args, updatedAt);
+      clientId = client?.id ?? existing?.clientId;
+    }
 
     const data = {
       companyId: company._id,
-      clientId: client?.id ?? existing?.clientId,
+      clientId,
       quoteNo: issuedNo,
       customerNameKey: args.customer.name.trim().toLowerCase() || undefined,
       date: args.date,
@@ -383,10 +429,33 @@ export const saveQuote = mutation({
     // Snapshot cooldown: autosave fires on every debounced keystroke, so storing
     // a full snapshot on each save floods quoteVersions with near-duplicate rows
     // and makes "restore version" useless. Always snapshot a creation; for
-    // updates, snapshot only when the previous one is older than the cooldown.
-    // Version numbers still increment every save (they drive OCC) — snapshots
-    // are just sparse audit points.
+    // updates, start a new snapshot only when the previous one is older than
+    // the cooldown; inside the cooldown, refresh that snapshot instead so the
+    // LAST state of an editing burst is always recoverable (not just its first
+    // keystroke). Version numbers still increment every save (they drive OCC).
     const SNAPSHOT_COOLDOWN_MS = 60_000;
+    const snapshot = {
+      clientId: data.clientId,
+      quoteNo: data.quoteNo,
+      date: data.date,
+      customer: data.customer,
+      customerNameKey: data.customerNameKey,
+      sections: data.sections,
+      finalCharge: data.finalCharge,
+      gst: data.gst,
+      validityDays: data.validityDays,
+      timeline: data.timeline,
+      terms: data.terms,
+      spec: data.spec,
+      showDims: data.showDims,
+      showSpec: data.showSpec,
+      total: data.total,
+      discount: data.discount,
+      gstAmt: data.gstAmt,
+      grand: data.grand,
+      itemCount: data.itemCount,
+      status: data.status,
+    };
     let writeSnapshot = !existing;
     if (existing) {
       const last = await ctx.db
@@ -394,7 +463,12 @@ export const saveQuote = mutation({
         .withIndex('by_quote_version', (q) => q.eq('quoteId', quoteId))
         .order('desc')
         .first();
-      writeSnapshot = !last || updatedAt - last.changedAt >= SNAPSHOT_COOLDOWN_MS;
+      const recent = last && updatedAt - last.changedAt < SNAPSHOT_COOLDOWN_MS;
+      if (recent && last.changeType === 'updated' && last.changedBy === subject) {
+        await ctx.db.patch(last._id, { version: data.version, snapshot });
+      } else {
+        writeSnapshot = true;
+      }
     }
     if (writeSnapshot) await ctx.db.insert('quoteVersions', {
       quoteId,
@@ -403,28 +477,7 @@ export const saveQuote = mutation({
       changedAt: updatedAt,
       changedBy: subject,
       changeType: existing ? 'updated' : 'created',
-      snapshot: {
-        clientId: data.clientId,
-        quoteNo: data.quoteNo,
-        date: data.date,
-        customer: data.customer,
-        customerNameKey: data.customerNameKey,
-        sections: data.sections,
-        finalCharge: data.finalCharge,
-        gst: data.gst,
-        validityDays: data.validityDays,
-        timeline: data.timeline,
-        terms: data.terms,
-        spec: data.spec,
-        showDims: data.showDims,
-        showSpec: data.showSpec,
-        total: data.total,
-        discount: data.discount,
-        gstAmt: data.gstAmt,
-        grand: data.grand,
-        itemCount: data.itemCount,
-        status: data.status,
-      },
+      snapshot,
     });
     return {
       id: quoteId,

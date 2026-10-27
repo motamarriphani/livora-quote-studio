@@ -1,20 +1,26 @@
-// One-command smoke check: syntax + bundling for every JS/TS source.
-// Runs via `npm test` (no test framework needed for this static+Convex app).
+// One-command check (`npm test`): typecheck frontend + backend, run unit
+// tests, and guard a few backend invariants. CI runs this before deploying.
 import { execSync } from 'node:child_process';
-import { readdirSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const check = (label, cmd) => {
   try { execSync(cmd, { stdio: 'pipe' }); console.log('  ✓ ' + label); }
-  catch (e) { console.error('  ✗ ' + label); console.error(String(e.stderr || e.message).split('\n').slice(0, 6).join('\n')); process.exit(1); }
+  catch (e) { console.error('  ✗ ' + label); console.error(String(e.stdout || '') + String(e.stderr || e.message)); process.exit(1); }
+};
+const assert = (label, ok) => {
+  if (!ok) { console.error('  ✗ ' + label); process.exit(1); }
+  console.log('  ✓ ' + label);
 };
 
 console.log('verify:');
-check('app.js syntax', 'node --check app.js');
-check('quote-math syntax', 'node --check quote-math.js');
-check('unit behavior', 'node scripts/unit.mjs');
-check('cloud.js bundle', 'npx esbuild cloud.js --bundle --format=esm --outfile=convex_check.out.mjs --log-level=error');
-for (const f of readdirSync('convex').filter((f) => f.endsWith('.ts'))) {
-  check('convex/' + f, `npx esbuild convex/${f} --bundle --format=esm --outfile=convex_check.out.mjs --log-level=error`);
-}
-try { rmSync('convex_check.out.mjs', { force: true }); } catch { }
+check('frontend types (web/)', 'npx tsc -p web/tsconfig.json');
+check('backend types (convex/)', 'npx tsc -p convex/tsconfig.json');
+check('unit tests', 'npx vitest run --config web/vite.config.mts');
+
+const convex = readdirSync('convex').filter((f) => f.endsWith('.ts'))
+  .map((f) => readFileSync('convex/' + f, 'utf8')).join('\n');
+assert('backend stores no untyped values (no v.any)', !convex.includes('v.any('));
+assert('every public function checks the signed-in user',
+  (convex.match(/export const \w+ = (query|mutation)\(/g) || []).length ===
+  (convex.match(/await requireSubject\(ctx\)/g) || []).length);
 console.log('all checks passed');

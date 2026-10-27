@@ -1,7 +1,11 @@
 name: Deploy frontend (Cloudflare Pages)
 
-# Needs two repo secrets: CLOUDFLARE_API_TOKEN (permission: Cloudflare Pages > Edit)
-# and CLOUDFLARE_ACCOUNT_ID. Only the staged browser files in public/ are uploaded.
+# Runs on every push to main. Needs repo secrets CLOUDFLARE_API_TOKEN
+# (permission: Cloudflare Pages > Edit) and CLOUDFLARE_ACCOUNT_ID.
+# Optional repo variables (Settings → Variables): CLERK_PUBLISHABLE_KEY and
+# CONVEX_URL — set them to the production values; when unset the build
+# falls back to the development values baked into web/src/main.tsx.
+# Only the Vite build output (web/dist) is uploaded — never the repo root.
 on:
   push:
     branches: [main]
@@ -21,9 +25,12 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm test
-      - run: node scripts/stage-public.mjs
+      - run: npm run build
+        env:
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.CLERK_PUBLISHABLE_KEY }}
+          VITE_CONVEX_URL: ${{ vars.CONVEX_URL }}
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy public --project-name accounts-livora --branch main
+          command: pages deploy web/dist --project-name accounts-livora --branch main
