@@ -96,9 +96,12 @@ function Sidebar() {
   const navigate = useNavigate();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const { pathname } = useLocation();
   const name = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.primaryEmailAddress?.emailAddress || 'Designer';
+  // "Quotes" stays highlighted inside a quote (but not on the blank new-quote screen).
+  const inQuote = pathname.startsWith('/quotes/') && !pathname.startsWith('/quotes/new');
   const item = (to: string, icon: string, label: string) => (
-    <NavLink to={to} end={to === '/'} className={({ isActive }) => 'side-item' + (isActive ? ' active' : '')}>
+    <NavLink to={to} end={to === '/'} className={({ isActive }) => 'side-item' + (isActive || (to === '/' && inQuote) ? ' active' : '')}>
       <span className="side-ico">{icon}</span>{label}
     </NavLink>
   );

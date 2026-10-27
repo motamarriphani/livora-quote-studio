@@ -101,6 +101,7 @@ export function useQuoteEditor(routeId: string, seed: NewQuoteSeed) {
         setState(dirty.current ? 'unsaved' : 'saved');
       } catch (e) {
         if (e instanceof ConvexError && (e.data as { code?: string })?.code === 'QUOTE_CONFLICT') {
+          console.warn('[editor] save conflict', { sentVersion: q.version, ...(e.data as object) });
           setState('conflict');
         } else {
           console.error(e);

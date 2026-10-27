@@ -73,6 +73,15 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .adj-field .input-error, .dim-field .input-error { position: absolute; left: 0; right: 0; top: 100%; font-size: 9px; }
 .sum-adj { display: flex; gap: 10px; align-items: flex-end; flex: 1; min-width: 0; }
 
+/* quote table: fits from ~650px wide (only two row actions now) */
+@media (min-width: 900px) {
+  .dash-row {
+    grid-template-columns: minmax(100px, .9fr) minmax(140px, 1.6fr) 90px minmax(90px, .8fr) 92px 72px;
+    gap: 12px;
+  }
+}
+.dash-row .c-status { text-align: right; }
+
 /* segmented control */
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: #efe9e0; border-radius: 11px; margin-bottom: 10px; }
 .seg button { border: 0; background: none; border-radius: 8px; padding: 8px; font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
@@ -84,7 +93,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .quote-view { padding: 12px 0 120px; min-height: auto; }
 .preview-bar { position: sticky; top: 0; z-index: 30; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 0; background: linear-gradient(var(--bg) 80%, transparent); }
 .preview-bar .btn { padding: 9px 14px; font-size: 13px; }
-.preview-tools { display: flex; gap: 14px; }
+.preview-tools { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
 .quote-pdf { display: block; }
 .quote-page-count { position: static; transform: none; display: inline-block; margin: 0 0 10px; }
 
@@ -114,4 +123,16 @@ button.client-main { border: 0; background: none; font: inherit; text-align: lef
 @media (max-width: 560px) {
   .head-actions { width: 100%; }
   .view-head { flex-wrap: wrap; }
+  .wide-only { display: none; }
+  .sum-top { flex-wrap: wrap; row-gap: 2px; }
+  .sum-grand { width: 100%; justify-content: space-between; }
+  .sum-context { order: 2; width: 100%; flex-wrap: nowrap; overflow: hidden; }
+  .sec-tools { gap: 2px; }
+  .sec-tools .icon-btn { width: 28px; height: 28px; font-size: 12px; }
+  .sec-head { padding-right: 8px; gap: 4px; }
+  .sum-bar { padding-left: 14px; padding-right: 14px; }
+  .adj-field label { white-space: nowrap; }
+  .adj-field:first-child { min-width: 110px; }
+  .adj-field:last-child { flex: 0 0 58px; }
+  .sum-bottom .btn { padding: 12px 16px; }
 }

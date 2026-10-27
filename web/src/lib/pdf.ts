@@ -67,7 +67,7 @@ export function buildPdfDef(q: Quote): TDocumentDefinitions {
   const tailN = Math.min(3, allTerms.length);
   const flowTerms = allTerms.slice(0, allTerms.length - tailN);
   const tailTerms = allTerms.slice(allTerms.length - tailN);
-  const termItem = (text: string) => ({ text, fontSize: 8.5, margin: [0, 1.2, 0, 1.2] as [number, number, number, number] });
+  const termItem = (text: string) => ({ text, margin: [0, 1.2, 0, 1.2] as [number, number, number, number] });
   const sigLine = (label: string, sub: string): Column => ({
     width: '*',
     stack: [
@@ -148,11 +148,11 @@ export function buildPdfDef(q: Quote): TDocumentDefinitions {
         } as Content,
       ] : []),
       { text: 'NOTE — TERMS & CONDITIONS', fontSize: 10, bold: true, characterSpacing: 1, margin: [0, 2, 0, 3] },
-      ...(flowTerms.length ? [{ ol: flowTerms.map(termItem), margin: [0, 0, 0, 4] } as Content] : []),
+      ...(flowTerms.length ? [{ ol: flowTerms.map(termItem), fontSize: 8.5, margin: [0, 0, 0, 4] } as Content] : []),
       {
         unbreakable: true,
         stack: [
-          ...(tailTerms.length ? [{ ol: tailTerms.map(termItem), start: flowTerms.length + 1 } as Content] : []),
+          ...(tailTerms.length ? [{ ol: tailTerms.map(termItem), fontSize: 8.5, start: flowTerms.length + 1 } as Content] : []),
           { columns: [sigLine(cu.name ? cu.name.toUpperCase() : 'CUSTOMER', 'Customer signature'), sigLine('For ' + c.name, 'Authorized signatory')], columnGap: 30 },
         ],
       },

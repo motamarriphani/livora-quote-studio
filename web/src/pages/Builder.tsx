@@ -59,11 +59,20 @@ export function Builder({ preview = false }: { preview?: boolean }) {
             toast({
               message: 'PDF downloaded. Sending it to the client?',
               action: { label: 'Mark as sent', run: () => update((q) => ({ ...q, status: 'sent' })) },
+              duration: 12000,
             });
           }
         }}
         toolbar={
           <>
+            {quote.status === 'draft' ? (
+              <button className="btn ghost" onClick={() => {
+                update((q) => ({ ...q, status: 'sent' }));
+                toast({ message: `${quote.quoteNo} marked as sent.`, type: 'success' });
+              }}>Mark as sent</button>
+            ) : (
+              <StatusChip status={quote.status} expired={isExpired(quote)} />
+            )}
             <label className="check"><input type="checkbox" checked={quote.showDims} onChange={(e) => update((q) => ({ ...q, showDims: e.target.checked }))} /> Dimensions</label>
             <label className="check"><input type="checkbox" checked={quote.showSpec} onChange={(e) => update((q) => ({ ...q, showSpec: e.target.checked }))} /> Specification</label>
           </>
@@ -136,7 +145,11 @@ function BuilderHead({ quote, saveState, onStatus, onRestored }: {
       <div className="head-title-wrap">
         <Link to="/" className="crumb">← Quotes</Link>
         <h1 className="head-title">{quote.quoteNo || 'New quote'} {quote.id && <StatusChip status={quote.status} expired={isExpired(quote)} />}</h1>
-        <div className={'save-state ' + saveState} role="status" aria-live="polite">{SAVE_LABEL[saveState]}</div>
+        <div className={'save-state ' + saveState} role="status" aria-live="polite">
+          {saveState === 'new' && quote.sections.some((s) => s.items.length)
+            ? 'Not saved yet — saves (and gets a number) when you make a change'
+            : SAVE_LABEL[saveState]}
+        </div>
       </div>
       {quote.id && (
         <div className="head-actions">
@@ -372,11 +385,11 @@ function SummaryBar({ quote, locked, update, onPreview }: { quote: Quote; locked
     <div className="sum-bar">
       <div className="sum-top">
         <div className="sum-context">
-          <span className="sum-count">{t.itemCount} item{t.itemCount === 1 ? '' : 's'}</span>
-          <span className="sum-sep">·</span>
+          <span className="sum-count wide-only">{t.itemCount} item{t.itemCount === 1 ? '' : 's'}</span>
+          <span className="sum-sep wide-only">·</span>
           <span className="sum-meta">Calculated <strong>{fmt(t.total)}</strong></span>
-          {t.discount > 0 && <><span className="sum-sep">·</span><span className="sum-meta">Discount <strong>{fmt(t.discount)}</strong> ({pct}%)</span></>}
-          {t.gstAmt > 0 && <><span className="sum-sep">·</span><span className="sum-meta">GST <strong>{fmt(t.gstAmt)}</strong></span></>}
+          {t.discount > 0 && <><span className="sum-sep">·</span><span className="sum-meta">Discount <strong>{fmt(t.discount)}</strong><span className="wide-only"> ({pct}%)</span></span></>}
+          {t.gstAmt > 0 && <><span className="sum-sep wide-only">·</span><span className="sum-meta wide-only">GST <strong>{fmt(t.gstAmt)}</strong></span></>}
         </div>
         <div className="sum-grand"><span className="sum-grand-label">Grand total</span><strong>{fmt(t.grand)}</strong></div>
       </div>
@@ -394,7 +407,7 @@ function SummaryBar({ quote, locked, update, onPreview }: { quote: Quote; locked
             <NumField id="gst" label="GST" step="0.5" max={100} placeholder="0" value={quote.gst} onValue={(n) => update((q) => ({ ...q, gst: n ?? 0 }))} />
           </div>
         </fieldset>
-        <button className="btn primary" disabled={!t.itemCount || t.agreedTooHigh} onClick={onPreview}>Preview &amp; download</button>
+        <button className="btn primary" disabled={!t.itemCount || t.agreedTooHigh} onClick={onPreview}>Preview<span className="wide-only"> &amp; download</span></button>
       </div>
     </div>
   );
