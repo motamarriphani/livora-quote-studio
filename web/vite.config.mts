@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
   plugins: [react()],
-  server: { port: 8131, fs: { allow: ['..'] } },
+  server: { port: 8130, fs: { allow: ['..'] } },
   build: { outDir: 'dist', emptyOutDir: true },
   test: { environment: 'node', include: ['src/**/*.test.ts'] },
 });
