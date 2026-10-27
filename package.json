@@ -1,11 +1,13 @@
 {
   "name": "livora-quote-studio",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
   "description": "LIVORA Quote Studio — mobile-first interior quotation builder (static frontend + Convex backend)",
   "scripts": {
     "dev": "python -m http.server 8130",
     "test": "node scripts/verify.mjs",
+    "stage": "node scripts/stage-public.mjs",
+    "deploy": "node scripts/stage-public.mjs && wrangler pages deploy public --project-name accounts-livora --branch main",
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy"
   },

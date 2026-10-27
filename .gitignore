@@ -18,3 +18,6 @@ Thumbs.db
 # scratch
 _scratch/
 _staging/
+
+# deploy staging output
+public/

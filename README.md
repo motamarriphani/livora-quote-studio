@@ -4,7 +4,14 @@ A mobile-first **quote builder webapp** for creating interior-work quotations on
 
 Since **v2.1**, the app is also your **account**: sign in with your email and every quote, catalog change, and client is saved to the cloud automatically — your phone and laptop always show the same data.
 
-## What's new in v2.1
+## What's new in v2.2
+
+- **App shell** — a sidebar and a **dashboard** of your quotes (open, edit, duplicate, delete, preview), plus a **Clients** page where you can add, edit and archive clients and see each client's quotes.
+- **Quote status & versions** — each quote is draft, sent, accepted or declined (expiry shows automatically from its date and validity), every save keeps a version you can restore, and deleted quotes can be brought back.
+- **Conflict handling** — if another device edited the same quote, you choose: reload the cloud version, keep yours as a copy, or merge.
+- **Google sign-in** alongside the email one-time code.
+
+## What came with v2.1
 
 - **Accounts & cloud sync** — sign in with a one-time code sent to your email (no passwords). Quotes save to your device instantly, then sync to the cloud in the background. Works offline, and your phone + laptop share the same data.
 - **Your catalog** — a 4-tab screen (Services · Items · Materials · Terms) you can edit. The builder's item sheet and new quotes use it.
@@ -85,9 +92,10 @@ No build step — the frontend is plain HTML/CSS/JS served as-is. For **backend 
 
 ## Deploy
 
-- **Static site** — pushing to `main` auto-deploys to **https://livora-quote.pages.dev** via Cloudflare Pages; live in ~30 seconds.
+- **Static site** — Cloudflare Pages project `accounts-livora` → **https://accounts-livora.pages.dev**. It is a Direct Upload project, so a `git push` does not deploy by itself. Run `npm run deploy`, or let the GitHub Actions workflow (`.github/workflows/deploy.yml`) do it on every push to `main` (needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repo secrets).
+- **Only browser files are published.** `npm run stage` copies `index.html`, `styles.css`, `app.js`, `cloud.js`, `quote-math.js` and `vendor/` into `public/`, and only that folder is uploaded. Never upload the repo root: it holds `.env.local` (secret keys), the backend sources and internal notes.
 - **Backend** — the Convex cloud backend deploys **separately**: `npm run convex:deploy` (`npx convex deploy`).
-- **This Accounts branch is staging-only** — it previews at **accounts-livora.pages.dev** until it's merged into `main`. Only `main` is the live site.
+- **The original (no-login) site** is a separate project, `livora quotation`, at https://livora-quote.pages.dev.
 
 ## Architecture
 
@@ -111,5 +119,7 @@ app.js       — state, catalog, rendering, quote template, PDF, history & catal
 cloud.js     — Clerk sign-in + Convex sync bridge (local-first, debounced push)
 convex/      — backend: schema.ts (tables above) + auth-gated functions (company, catalog, quotes, clients, common)
 vendor/      — Clerk & Convex SDKs, bundled locally (no CDN dependency)
-package.json — convex dependency + npm scripts (dev, convex:dev, convex:deploy)
+quote-math.js — pure money math (shared by the app, tests and the PDF harness)
+scripts/     — verify.mjs / unit.mjs (npm test), stage-public.mjs (deploy staging)
+package.json — convex dependency + npm scripts (dev, test, stage, deploy, convex:dev, convex:deploy)
 ```
