@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# secrets — never commit these
+.env
+.env.local
+convex/.env.local
+*.pem
+
+# convex local state
+convex/.dev.db
+.convex/
+
+# os junk
+.DS_Store
+Thumbs.db
+
+# scratch
+_scratch/
+_staging/

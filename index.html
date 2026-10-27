@@ -4,100 +4,421 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>LIVORA Interiors — Quote Studio</title>
-<!-- v2.0.0 — Cloudflare Pages auto-deploy test -->
+<!-- v2.2.0 — accounts: app shell (sidebar + dashboard + clients) · cache-bust v23 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=23">
 </head>
 <body>
 
-<!-- ══════════════ BUILDER VIEW ══════════════ -->
-<div id="builder" class="app">
+<!-- ══════════════ LOGIN OVERLAY ══════════════
+     T3-Code-style sign-in: dark modal, own markup, powered by Clerk's
+     core SDK (email OTP + Google OAuth) — no Clerk UI widget. -->
+<div id="loginOverlay" class="login-overlay" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="login-title" id="loginTitle">Sign in to LIVORA <span>Interiors</span></div>
+      <div class="login-desc">Welcome back! Please sign in to continue.</div>
+    </div>
 
-  <!-- Top bar -->
-  <header class="topbar">
-    <div class="brand">
+    <button class="social-btn" data-action="login-google">
+      <svg class="g-icon" viewBox="0 0 48 48" aria-hidden="true">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div class="divider"><span>or</span></div>
+
+    <div id="loginStepEmail">
+      <input id="loginEmail" class="field" type="email" inputmode="email" autocomplete="email" placeholder="Email address">
+      <button class="btn primary full" data-action="login-send-code">Continue →</button>
+      <div id="loginMsg" class="login-msg"></div>
+    </div>
+    <div id="loginStepCode" class="hidden">
+      <input id="loginCode" class="field" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code" aria-label="6-digit verification code">
+      <button class="btn primary full" data-action="login-verify">Sign in →</button>
+      <button class="btn ghost full" data-action="login-resend">↻ Resend code</button>
+      <button class="btn ghost full" data-action="login-back">← Change email</button>
+      <div id="loginMsg2" class="login-msg"></div>
+    </div>
+
+    <div class="login-foot">
+      <span>Don’t have an account? <button class="foot-link" data-action="login-signup">Sign up</button></span>
+      <span class="clerk-brand">Secured by Clerk</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ APP SHELL (sidebar + main) ══════════════ -->
+<div id="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside id="sidebar">
+    <div class="side-brand">
       <div class="brand-mark">L</div>
       <div>
         <div class="brand-name">LIVORA <span>Interiors</span></div>
         <div class="brand-sub">Quote Studio</div>
       </div>
     </div>
-    <div class="top-actions">
-      <button class="icon-btn" data-action="sample" title="Load sample quote">🧪</button>
-    </div>
-  </header>
 
-  <!-- Customer card -->
-  <section class="card cust-card">
-    <div class="card-label">Customer</div>
-    <div class="grid-2">
-      <input class="field" data-field="customer.name" placeholder="Customer name">
-      <input class="field" data-field="customer.phone" placeholder="Phone">
-    </div>
-    <input class="field" data-field="customer.address" placeholder="Address">
-    <div class="grid-2">
-      <input class="field" id="quoteNo" data-field="quoteNo" placeholder="Quote No (auto)">
-      <input class="field" id="date" data-field="date" type="date">
-    </div>
-    <div class="grid-2">
-      <input class="field" id="validity" data-field="validityDays" type="number" placeholder="Validity (days)">
-      <input class="field" id="timeline" data-field="timeline" placeholder="Timeline (e.g. 6–8 weeks)">
-    </div>
-  </section>
+    <nav class="side-nav">
+      <button class="side-item" data-view="dashboard"><span class="side-ico">🏠</span>Dashboard</button>
+      <button class="side-item" data-view="clients"><span class="side-ico">👥</span>Clients</button>
+      <div class="side-label">Catalog</div>
+      <button class="side-item" data-view="services"><span class="side-ico">🧰</span>Services</button>
+      <button class="side-item" data-view="items"><span class="side-ico">📦</span>Items</button>
+      <button class="side-item" data-view="materials"><span class="side-ico">🧱</span>Materials</button>
+      <button class="side-item" data-view="terms"><span class="side-ico">📜</span>Terms &amp; Conditions</button>
+    </nav>
 
-  <!-- Sections -->
-  <div id="sections" class="sections"></div>
-
-  <button class="add-section" data-action="add-section">＋ Add room / section</button>
-
-  <button class="clear-quote" data-action="reset">✕ Clear quote</button>
-
-  <!-- spacer for sticky bar -->
-  <div class="bar-spacer"></div>
-
-  <!-- ══════════════ STICKY SUMMARY BAR ══════════════ -->
-  <div class="sum-bar">
-    <div class="sum-main">
-      <div class="sum-count" id="sumCount">0 items</div>
-      <div class="sum-total" id="sumTotal">₹0</div>
+    <div class="side-foot">
+      <button class="side-item" data-view="builder"><span class="side-ico">🛠</span>Quote builder</button>
     </div>
-    <div class="sum-adj">
-      <div class="adj-field"><label>Final amount ₹</label><input id="finalCharge" type="number" step="1" min="0" placeholder="0"></div>
-      <div class="adj-field"><label>GST %</label><input id="gst" type="number" step="0.5" min="0" placeholder="0"></div>
+
+    <div class="side-profile-wrap">
+    <button type="button" class="side-profile" data-action="toggle-profile-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="profileMenu" title="Account menu">
+      <div class="profile-avatar" id="profileAvatar"></div>
+      <div class="profile-meta">
+        <div class="profile-name" id="profileName">—</div>
+        <div class="profile-email" id="profileEmail"></div>
+      </div>
+      <span class="profile-chev" aria-hidden="true">▴</span>
+    </button>
+    <div id="profileMenu" class="profile-menu hidden" role="menu" aria-label="Account menu">
+      <div class="profile-menu-head">
+        <div class="profile-avatar menu-avatar" id="menuAvatar">—</div>
+        <div class="profile-menu-meta">
+          <div class="profile-menu-name" id="menuName">—</div>
+          <div class="profile-menu-sub" id="menuEmail"></div>
+        </div>
+        <span class="profile-menu-chev" aria-hidden="true">›</span>
+      </div>
+      <div class="profile-menu-group">
+        <button type="button" role="menuitem" data-action="menu-archive">🗃️ Archive</button>
+      </div>
+      <div class="menu-divider" role="separator"></div>
+      <div class="profile-menu-group">
+        <button type="button" role="menuitem" data-action="menu-personalization">🎨 Personalization</button>
+        <button type="button" role="menuitem" data-action="menu-profile">👤 Profile</button>
+        <button type="button" role="menuitem" data-action="menu-settings">⚙️ Settings</button>
+      </div>
+      <div class="menu-divider" role="separator"></div>
+      <div class="profile-menu-group">
+        <button type="button" role="menuitem" data-action="menu-help">❓ Help &amp; support <span class="menu-chev" aria-hidden="true">›</span></button>
+        <button type="button" role="menuitem" data-action="menu-logout">🚪 Log out</button>
+      </div>
     </div>
-    <div class="sum-btns">
-      <button class="btn ghost" data-action="preview">Preview</button>
     </div>
+  </aside>
+  <div id="sideBackdrop" data-action="close-sidebar"></div>
+
+  <!-- ── Main ── -->
+  <main id="main">
+
+    <!-- ══════════════ SYNC STATUS BANNER (shows on every view) ══════════════ -->
+    <div id="syncBanner" class="sync-banner hidden"></div>
+
+    <!-- ══════════════ DASHBOARD VIEW ══════════════ -->
+    <section id="dashboard" class="view">
+      <header class="view-head">
+        <button class="icon-btn menu-btn" data-action="open-sidebar" title="Menu">☰</button>
+        <div class="head-title-wrap">
+          <div class="head-title">Dashboard</div>
+          <div class="head-sub" id="dashSub">Your quotes at a glance</div>
+        </div>
+      </header>
+
+      <div class="dash-hero">
+        <button class="btn primary big" data-action="new-quote">＋ New Quote</button>
+        <button class="btn ghost" data-action="continue-last">Continue last quote</button>
+        <button class="btn ghost" data-action="deleted-quotes">Recently deleted</button>
+      </div>
+
+      <div class="dash-stats">
+        <div class="stat-card">
+          <div class="stat-num" id="statMonth">0</div>
+          <div class="stat-label">Quotes this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statValue">₹0</div>
+          <div class="stat-label">Quoted this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statOpen">0</div>
+          <div class="stat-label">Open quotes</div>
+        </div>
+      </div>
+
+      <div class="dash-table">
+        <div class="dash-table-head">
+          <div class="th qno">Quote No</div>
+          <div class="th client">Client</div>
+          <div class="th date">Date</div>
+          <div class="th total">Total</div>
+          <div class="th status">Status</div>
+          <div class="th act"></div>
+        </div>
+        <div class="dash-filters">
+          <input id="dashSearch" class="field search dash-search" type="search" placeholder="Search quotes (client or number)…">
+          <select id="dashStatus" class="field" aria-label="Filter quotes by status">
+            <option value="">All statuses</option><option value="draft">Draft</option><option value="sent">Sent</option>
+            <option value="accepted">Accepted</option><option value="declined">Declined</option><option value="expired">Expired</option>
+          </select>
+        </div>
+        <div id="dashList" class="dash-list"></div>
+        <button id="dashMore" class="btn ghost full load-more hidden" data-action="dash-more">Load more quotes</button>
+      </div>
+    </section>
+
+    <!-- ══════════════ CLIENTS VIEW ══════════════ -->
+    <section id="clients" class="view hidden">
+      <header class="view-head">
+        <button class="icon-btn menu-btn" data-action="open-sidebar" title="Menu">☰</button>
+        <div class="head-title-wrap">
+          <div class="head-title">Clients</div>
+          <div class="head-sub">Auto-saved from every quote</div>
+        </div>
+        <button class="btn ghost head-btn" data-action="toggle-archived">Archived clients</button>
+        <button class="btn primary head-btn" data-action="add-client">＋ Add client</button>
+      </header>
+      <input id="clientSearch" class="field search" type="search" placeholder="Search clients…">
+      <div id="clientList" class="client-list"></div>
+      <button id="clientsMore" class="btn ghost full load-more hidden" data-action="clients-more">Load more clients</button>
+    </section>
+
+    <!-- ══════════════ BUILDER VIEW ══════════════ -->
+    <section id="builder" class="view app hidden">
+
+      <!-- Top bar -->
+      <header class="topbar">
+        <button class="icon-btn menu-btn" data-action="open-sidebar" title="Menu">☰</button>
+        <div class="brand">
+          <div class="brand-mark">L</div>
+          <div>
+            <div class="brand-name">LIVORA <span>Interiors</span></div>
+            <div class="brand-sub">Quote Studio</div>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn" data-action="sample" title="Load sample quote">🧪</button>
+        </div>
+      </header>
+
+      <!-- Customer card -->
+      <section class="card cust-card">
+        <div class="card-label">Customer</div>
+        <button type="button" class="client-pick" data-action="toggle-client-pick">
+          <span class="cp-avatar" id="cpAvatar">👤</span>
+          <span class="cp-label" id="cpLabel">Select client…</span>
+          <span class="cp-chev">▾</span>
+        </button>
+        <div id="clientPickList" class="client-pick-list hidden">
+          <input id="clientPickSearch" class="field search" type="search" placeholder="Search clients…" aria-label="Search clients">
+          <div id="clientPickRows"></div>
+        </div>
+        <div class="grid-2">
+          <label class="sr-only" for="customerName">Customer name</label>
+          <input id="customerName" class="field" data-field="customer.name" placeholder="Customer name" aria-label="Customer name">
+          <label class="sr-only" for="customerPhone">Customer phone</label>
+          <input id="customerPhone" class="field" data-field="customer.phone" placeholder="Phone" aria-label="Customer phone">
+        </div>
+        <label class="sr-only" for="customerAddress">Customer address</label>
+        <input id="customerAddress" class="field" data-field="customer.address" placeholder="Address" aria-label="Customer address">
+        <div class="grid-2">
+          <label class="sr-only" for="quoteNo">Quote number</label>
+          <input class="field" id="quoteNo" data-field="quoteNo" placeholder="Quote No (auto)" aria-label="Quote number" readonly>
+          <label class="sr-only" for="date">Quote date</label>
+          <input class="field" id="date" data-field="date" type="date" aria-label="Quote date">
+        </div>
+        <div class="quote-sync-line">
+          <span>Cloud sync</span>
+          <span id="quoteSyncStatus" class="quote-sync-status local" role="status" aria-live="polite">Saved on this device</span>
+        </div>
+        <div class="grid-2">
+          <label class="sr-only" for="validity">Quote validity in days</label>
+          <input class="field" id="validity" data-field="validityDays" type="number" min="1" max="365" placeholder="Validity (days)" aria-label="Quote validity in days">
+          <label class="sr-only" for="timeline">Project timeline</label>
+          <input class="field" id="timeline" data-field="timeline" placeholder="Timeline (e.g. 6–8 weeks)" aria-label="Project timeline">
+        </div>
+      </section>
+
+      <!-- Sections -->
+      <div id="sections" class="sections"></div>
+
+      <button class="add-section" data-action="add-section">＋ Add room / section</button>
+
+      <button class="clear-quote" data-action="reset">✕ Clear quote</button>
+
+      <!-- spacer for sticky bar -->
+      <div class="bar-spacer"></div>
+
+      <!-- ══════════════ STICKY SUMMARY BAR ══════════════ -->
+      <div class="sum-bar">
+        <div class="sum-top">
+          <div class="sum-context">
+            <span class="sum-count" id="sumCount">0 items</span>
+            <span class="sum-sep">·</span>
+            <span class="sum-meta">Calculated <strong id="sumCalculated">₹0</strong></span>
+            <span class="sum-sep">·</span>
+            <span class="sum-meta">GST <strong id="sumGst">₹0</strong></span>
+          </div>
+          <div class="sum-grand">
+            <span class="sum-grand-label">Grand total</span>
+            <strong id="sumGrand">₹0</strong>
+          </div>
+        </div>
+        <div class="sum-warning" id="sumWarning" role="status"></div>
+        <div class="sum-bottom">
+          <div class="sum-adj">
+            <div class="adj-field"><label for="finalCharge">Agreed subtotal ₹</label><input id="finalCharge" type="number" step="1" min="0" max="100000000" placeholder="0"><small class="input-error" id="finalChargeError"></small></div>
+            <div class="adj-field"><label for="gst">GST %</label><input id="gst" type="number" step="0.5" min="0" max="100" placeholder="0"><small class="input-error" id="gstError"></small></div>
+          </div>
+          <button class="btn primary" data-action="preview">Preview</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ CATALOG VIEW (services · items · materials · terms) ══════════════ -->
+    <section id="catalog" class="view">
+      <header class="view-head">
+        <button class="icon-btn menu-btn" data-action="open-sidebar" title="Menu">☰</button>
+        <div class="head-title-wrap">
+          <div class="head-title" id="catHeadTitle">Services</div>
+          <div class="head-sub">Your catalog — synced to your account</div>
+        </div>
+        <button class="btn ghost head-btn hidden" data-action="terms-edit-toggle" id="termsEditBtn">✏️ Edit</button>
+        <button class="btn primary head-btn" data-action="cat-add" id="catAddBtn">＋ Add Service</button>
+      </header>
+      <div class="cat-filters hidden" id="catFilters">
+        <input id="catItemsSearch" class="field search" type="search" placeholder="Search items (name or category)…" aria-label="Search items">
+        <select id="catItemsCat" class="field" aria-label="Filter items by category"></select>
+      </div>
+      <div id="catList" class="cat-list"></div>
+      <div class="cat-pager hidden" id="catPager"></div>
+    </section>
+
+    <!-- ══════════════ QUOTE VIEW (final template — stays in the shell) ══════════════ -->
+    <section id="quote" class="view quote-view hidden">
+      <button class="quote-close" data-action="back-to-builder" title="Close preview">✕</button>
+      <button class="quote-options" data-action="quote-options" title="Quote display options">⚙</button>
+      <div id="quotePageCount" class="quote-page-count hidden" role="status" aria-live="polite"></div>
+      <div id="quoteSheet" class="quote-sheet"></div>
+      <!-- The real generated PDF, rendered page-by-page with pdf.js and styled
+           to match the site — page-for-page identical to what Download produces. -->
+      <div id="quotePdf" class="quote-pdf" aria-label="Quote PDF preview"></div>
+      <div class="quote-actions">
+        <div class="quote-total">
+          <div class="qt-label">Total cost</div>
+          <div class="qt-amount" id="quoteTotal">₹0</div>
+          <div class="qt-breakdown" id="quoteBreakdown"></div>
+        </div>
+        <button class="btn primary" data-action="download-pdf">⬇ Download Quote</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ══════════════ CLIENT EDIT MODAL ══════════════ -->
+<div id="clientModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="clientModalTitle">
+  <div class="modal-backdrop" data-action="close-client-modal" aria-hidden="true"></div>
+  <div class="modal-sheet small" tabindex="-1">
+    <div class="modal-head">
+      <div class="modal-title" id="clientModalTitle">Add client</div>
+      <button class="icon-btn" data-action="close-client-modal" aria-label="Close client dialog">✕</button>
+    </div>
+    <input id="clName" class="field" placeholder="Client name">
+    <input id="clPhone" class="field" type="tel" placeholder="Phone">
+    <input id="clAddress" class="field" placeholder="Address">
+    <label id="clDraftRow" class="check hidden"><input id="clUpdateDraft" type="checkbox"> Also update the current draft</label>
+    <div class="modal-hint">Past quotes keep the client details they had when they were made. This changes the client book only unless you choose to update the current draft.</div>
+    <div id="clMergeRow" class="merge-row hidden">
+      <select id="clMerge" class="field"></select>
+      <div class="modal-hint">Merging moves this client's quotes into the other record and deletes this one — only do this when they're the same person.</div>
+    </div>
+    <button class="btn primary full" data-action="save-client">Save client</button>
   </div>
 </div>
 
-<!-- ══════════════ QUOTE VIEW (final template) ══════════════ -->
-<div id="quote" class="quote-view hidden">
-  <button class="quote-close" data-action="back-to-builder" title="Close preview">✕</button>
-  <button class="quote-options" data-action="quote-options" title="Quote display options">⚙</button>
-  <div id="quoteSheet" class="quote-sheet"></div>
-  <div class="quote-actions">
-    <div class="quote-total">
-      <div class="qt-label">Total cost</div>
-      <div class="qt-amount" id="quoteTotal">₹0</div>
-      <div class="qt-breakdown" id="quoteBreakdown"></div>
+<!-- ══════════════ SYNC CONFLICT MODAL (two devices changed the same quote) ══════════════ -->
+<div id="conflictModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="conflictModalTitle" aria-describedby="conflictMsg">
+  <div class="modal-backdrop" data-action="close-conflict-modal" aria-hidden="true"></div>
+  <div class="modal-sheet small" tabindex="-1">
+    <div class="modal-head">
+      <div class="modal-title" id="conflictModalTitle">Quote changed on another device</div>
+      <button class="icon-btn" data-action="close-conflict-modal" aria-label="Close conflict dialog">✕</button>
     </div>
-    <button class="btn primary" data-action="download-pdf">⬇ Download Quote</button>
+    <div class="conflict-msg" id="conflictMsg"></div>
+    <div class="conflict-btns">
+      <button class="btn primary full" data-action="conflict-reload">Reload cloud version</button>
+      <button class="btn ghost full" data-action="conflict-copy">Keep my changes as a copy</button>
+      <button class="btn ghost full" data-action="conflict-merge">Try merge</button>
+      <button class="btn ghost full" data-action="conflict-dismiss">Keep editing locally</button>
+    </div>
+    <div class="modal-hint" id="conflictHint"></div>
+  </div>
+</div>
+
+<!-- ══════════════ DELETED QUOTES / RECOVERY MODAL ══════════════ -->
+<div id="deletedQuotesModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="deletedQuotesTitle">
+  <div class="modal-backdrop" data-action="close-deleted-quotes" aria-hidden="true"></div>
+  <div class="modal-sheet" tabindex="-1">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="deletedQuotesTitle">Recently deleted</div>
+        <div class="modal-sub">Deleted quotes remain available for recovery.</div>
+      </div>
+      <button class="icon-btn" data-action="close-deleted-quotes" aria-label="Close recently deleted">✕</button>
+    </div>
+    <div id="deletedQuotesList" class="deleted-quotes-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════ QUOTE VERSION HISTORY MODAL ══════════════ -->
+<div id="quoteVersionsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="quoteVersionsTitle">
+  <div class="modal-backdrop" data-action="close-quote-versions" aria-hidden="true"></div>
+  <div class="modal-sheet" tabindex="-1">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="quoteVersionsTitle">Quote history</div>
+        <div class="modal-sub">Every saved version is kept for recovery.</div>
+      </div>
+      <button class="icon-btn" data-action="close-quote-versions" aria-label="Close quote history">✕</button>
+    </div>
+    <div id="quoteVersionsList" class="quote-versions-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════ CATALOG EDIT MODAL ══════════════ -->
+<div id="catEditModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="catEditTitle">
+  <div class="modal-backdrop" data-action="close-cat-edit" aria-hidden="true"></div>
+  <div class="modal-sheet small" tabindex="-1">
+    <div class="modal-head">
+      <div class="modal-title" id="catEditTitle">Add</div>
+      <button class="icon-btn" data-action="close-cat-edit" aria-label="Close catalog dialog">✕</button>
+    </div>
+    <div id="catEditFields"></div>
+    <div id="catEditErr" class="cat-err hidden"></div>
+    <button class="btn primary full" data-action="cat-save">Save</button>
   </div>
 </div>
 
 <!-- ══════════════ LIBRARY MODAL ══════════════ -->
-<div id="libraryModal" class="modal hidden">
-  <div class="modal-backdrop" data-action="close-library"></div>
-  <div class="modal-sheet">
+<div id="libraryModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="libraryModalTitle">
+  <div class="modal-backdrop" data-action="close-library" aria-hidden="true"></div>
+  <div class="modal-sheet" tabindex="-1">
     <div class="modal-head">
       <div>
-        <div class="modal-title">Item library</div>
+        <div class="modal-title" id="libraryModalTitle">Item library</div>
         <div class="modal-sub" id="libTarget">Adding to …</div>
       </div>
-      <button class="icon-btn" data-action="close-library">✕</button>
+      <button class="icon-btn" data-action="close-library" aria-label="Close item library">✕</button>
     </div>
     <input id="libSearch" class="field search" type="search" placeholder="Search items…">
     <div id="libGrid" class="lib-grid"></div>
@@ -108,34 +429,34 @@
 </div>
 
 <!-- ══════════════ CUSTOM ITEM MODAL ══════════════ -->
-<div id="customModal" class="modal hidden">
-  <div class="modal-backdrop" data-action="close-custom"></div>
-  <div class="modal-sheet small">
+<div id="customModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="customModalTitle">
+  <div class="modal-backdrop" data-action="close-custom" aria-hidden="true"></div>
+  <div class="modal-sheet small" tabindex="-1">
     <div class="modal-head">
-      <div class="modal-title">Custom item</div>
-      <button class="icon-btn" data-action="close-custom">✕</button>
+      <div class="modal-title" id="customModalTitle">Custom item</div>
+      <button class="icon-btn" data-action="close-custom" aria-label="Close custom item dialog">✕</button>
     </div>
     <input id="cName" class="field" placeholder="Description">
     <div class="grid-2">
-      <input id="cW" class="field" type="number" placeholder="Width (ft)" step="0.1" min="0">
-      <input id="cH" class="field" type="number" placeholder="Height (ft)" step="0.1" min="0">
+      <input id="cW" class="field" type="number" placeholder="Width (ft)" step="0.1" min="0" max="1000">
+      <input id="cH" class="field" type="number" placeholder="Height (ft)" step="0.1" min="0" max="1000">
     </div>
-    <input id="cRate" class="field" type="number" placeholder="Rate (₹/sqft)" step="1" min="0">
+    <input id="cRate" class="field" type="number" placeholder="Rate (₹/sqft)" step="1" min="0" max="10000000">
     <label class="check"><input id="cLump" type="checkbox"> Lump sum (no W×H — e.g. painting, electrical)</label>
     <button class="btn primary full" data-action="add-custom">Add item</button>
   </div>
 </div>
 
 <!-- ══════════════ DISPLAY OPTIONS MODAL ══════════════ -->
-<div id="optionsModal" class="modal hidden">
-  <div class="modal-backdrop" data-action="close-options"></div>
-  <div class="modal-sheet small">
+<div id="optionsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="optionsModalTitle">
+  <div class="modal-backdrop" data-action="close-options" aria-hidden="true"></div>
+  <div class="modal-sheet small" tabindex="-1">
     <div class="modal-head">
       <div>
-        <div class="modal-title">Quote display options</div>
+        <div class="modal-title" id="optionsModalTitle">Quote display options</div>
         <div class="modal-sub">These apply to the preview &amp; the downloaded PDF</div>
       </div>
-      <button class="icon-btn" data-action="close-options">✕</button>
+      <button class="icon-btn" data-action="close-options" aria-label="Close display options">✕</button>
     </div>
     <label class="check opt-row"><input id="optDims" type="checkbox"> Show H × W (dimensions)</label>
     <label class="check opt-row"><input id="optSpec" type="checkbox"> Show material specifications</label>
@@ -146,6 +467,27 @@
   </div>
 </div>
 
-<script src="app.js"></script>
+<!-- ══════════════ IN-APP CONFIRMATION DIALOG ══════════════ -->
+<div id="appDialog" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle" aria-describedby="appDialogMessage">
+  <div class="modal-backdrop" data-action="app-dialog-cancel" aria-hidden="true"></div>
+  <div class="modal-sheet small" tabindex="-1">
+    <div class="modal-head">
+      <div class="modal-title" id="appDialogTitle">Please confirm</div>
+      <button class="icon-btn" data-action="app-dialog-cancel" aria-label="Close confirmation dialog">✕</button>
+    </div>
+    <div id="appDialogMessage" class="dialog-message"></div>
+    <div class="dialog-actions">
+      <button id="appDialogCancel" class="btn ghost full" data-action="app-dialog-cancel">Cancel</button>
+      <button id="appDialogConfirm" class="btn primary full" data-action="app-dialog-confirm">Continue</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastRegion" class="toast-region hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script defer src="vendor/clerk-dist/clerk.browser.js" data-clerk-publishable-key="pk_test_bXV0dWFsLWNvcmFsLTM1LmNsZXJrLmFjY291bnRzLmRldiQ"></script>
+<script src="quote-math.js?v=23"></script>
+<script src="app.js?v=23"></script>
+<script type="module" src="cloud.js?v=23"></script>
 </body>
 </html>
