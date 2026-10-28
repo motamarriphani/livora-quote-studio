@@ -4,6 +4,7 @@ import type { Column, Content, TDocumentDefinitions, TableCell } from 'pdfmake/i
 import type { Quote } from './types';
 import { COMPANY, printedTerms } from './defaults';
 import { amountInWords, fmtDate } from './format';
+import { LOGO_MARK_SVG } from './logo';
 import { itemAmount, sectionTotal, totals } from './math';
 
 const INK = '#241d16';
@@ -23,12 +24,14 @@ export function buildPdfDef(q: Quote): TDocumentDefinitions {
 
   const body: TableCell[][] = [];
   let sno = 0;
+  let room = 0;
   for (const sec of q.sections) {
     if (!sec.items.length) continue;
-    body.push([{ text: sec.name.toUpperCase(), colSpan: cols, fillColor: ACCENT_BG, bold: true, fontSize: 8.5, color: INK, margin: [0, 3, 0, 3] }, ...filler(cols - 1)]);
-    for (const it of sec.items) {
+    room++;
+    body.push([{ id: `room-${room}`, text: sec.name.toUpperCase(), colSpan: cols, fillColor: ACCENT_BG, bold: true, fontSize: 8.5, color: INK, margin: [0, 3, 0, 3] }, ...filler(cols - 1)]);
+    sec.items.forEach((it, i) => {
       sno++;
-      const row: TableCell[] = [{ text: String(sno), alignment: 'center' }, { text: it.name }];
+      const row: TableCell[] = [{ text: String(sno), alignment: 'center', ...(i === 0 ? { id: `room-${room}-first` } : {}) }, { text: it.name }];
       if (q.showDims) {
         row.push({ text: it.lump ? '—' : String(it.w ?? ''), alignment: 'center' }, { text: it.lump ? '—' : String(it.h ?? ''), alignment: 'center' });
       }
@@ -38,7 +41,7 @@ export function buildPdfDef(q: Quote): TDocumentDefinitions {
         { text: inr(itemAmount(it)), alignment: 'right', bold: true },
       );
       body.push(row);
-    }
+    });
     body.push([{ text: 'Subtotal — ' + sec.name, colSpan: span, alignment: 'right', bold: true, italics: true, fontSize: 8 }, ...filler(span - 1), { text: inr(sectionTotal(sec)), alignment: 'right', bold: true }]);
   }
   const totalRow = (label: string, value: string, dark = false): TableCell[] => [
@@ -82,6 +85,11 @@ export function buildPdfDef(q: Quote): TDocumentDefinitions {
     pageSize: 'A4',
     pageMargins: [36, 40, 36, 48],
     info: { title: 'Quotation ' + q.quoteNo, author: c.name, subject: 'Quotation — ' + cu.name },
+    // A room heading never ends a page alone: if its first item isn't on the same
+    // page, the heading moves to the next page with it.
+    pageBreakBefore: (node, nodes) =>
+      typeof node.id === 'string' && /^room-\d+$/.test(node.id) &&
+      !nodes.getFollowingNodesOnPage().some((n) => n.id === node.id + '-first'),
     footer: (current: number, count: number) => ({
       columns: [
         { text: `${c.name} · ${c.address} · ${c.phone}`, fontSize: 7, color: '#8a7d6f' },
@@ -92,6 +100,7 @@ export function buildPdfDef(q: Quote): TDocumentDefinitions {
     content: [
       {
         columns: [
+          { width: 46, svg: LOGO_MARK_SVG, margin: [0, 1, 0, 0] },
           { width: '*', stack: [
             { text: c.name, fontSize: 20, bold: true, characterSpacing: 1, color: INK },
             { text: c.address, fontSize: 8.5, color: '#4c4238', margin: [0, 3, 0, 0] },
@@ -105,6 +114,7 @@ export function buildPdfDef(q: Quote): TDocumentDefinitions {
             ...(q.timeline.trim() ? [{ text: 'TIMELINE : ' + q.timeline.trim(), fontSize: 8.5, alignment: 'right' as const }] : []),
           ] },
         ],
+        columnGap: 12,
         margin: [0, 0, 0, 10],
       },
       { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 523, y2: 0, lineWidth: 1.6, lineColor: INK }], margin: [0, 0, 0, 8] },

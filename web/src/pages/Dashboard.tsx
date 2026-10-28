@@ -5,6 +5,7 @@ import { api } from '../../../convex/_generated/api';
 import type { ClientId, QuoteId } from '../lib/types';
 import { fmt, fmtDate, todayStr } from '../lib/format';
 import { PageHead, StatusChip, useConfirm, useToast } from '../ui';
+import { Icon } from '../components/Icon';
 
 export type QuoteSummary = {
   id: QuoteId; quoteNo: string; date: string; customerName: string; grand: number;
@@ -21,14 +22,15 @@ export function Dashboard() {
 
   return (
     <section>
-      <PageHead title="Quotes" sub="Every quote you build is saved here automatically">
-        <button className="btn primary head-btn" onClick={() => navigate('/quotes/new')}>＋ New quote</button>
+      <PageHead title="Quotes">
+        <button className="btn ghost head-btn icon-narrow" onClick={() => navigate('/import')} aria-label="Import from Excel"><Icon name="upload" /><span className="wide-only">Import Excel</span></button>
+        <button className="btn primary head-btn" onClick={() => navigate('/quotes/new')}><Icon name="plus" />New quote</button>
       </PageHead>
 
       <div className="dash-stats">
-        <Stat value={stats?.monthCount} label="Quotes made this month" />
-        <Stat value={stats ? fmt(stats.awaitingValue ?? 0) : undefined} label={`Awaiting reply${stats?.awaitingCount ? ` · ${stats.awaitingCount}` : ''}`} />
-        <Stat value={stats ? fmt(stats.acceptedMonthValue ?? 0) : undefined} label={`Accepted this month${stats?.acceptedMonthCount ? ` · ${stats.acceptedMonthCount}` : ''}`} />
+        <Stat value={stats?.monthCount} label="This month" />
+        <Stat value={stats ? fmt(stats.awaitingValue ?? 0) : undefined} label={`Awaiting${stats?.awaitingCount ? ` · ${stats.awaitingCount}` : ''}`} />
+        <Stat value={stats ? fmt(stats.acceptedMonthValue ?? 0) : undefined} label={`Won this month${stats?.acceptedMonthCount ? ` · ${stats.acceptedMonthCount}` : ''}`} />
       </div>
 
       <div className="dash-table">
@@ -96,7 +98,7 @@ function QuotePage({ args, cursor, first, last, filtered, emptyText, onMore }: {
     return (
       <div className="dash-empty">
         {filtered ? <><b>No matching quotes</b><span>Try a different search or status.</span></>
-          : <><b>No quotes yet</b><span>{emptyText ?? 'Tap ＋ New quote to build your first one.'}</span></>}
+          : <><b>No quotes yet</b><span>{emptyText ?? 'Tap New quote to build your first one.'}</span></>}
       </div>
     );
   }
@@ -138,13 +140,13 @@ export function QuoteRow({ q }: { q: QuoteSummary }) {
       <div className="c-total">{fmt(q.grand)}</div>
       <div className="c-status"><StatusChip status={stored} expired={q.expired ?? q.status === 'expired'} /></div>
       <div className="c-act" onClick={(e) => e.stopPropagation()}>
-        <button className="row-action" title="Preview" aria-label="Preview quote" onClick={() => navigate(`/quotes/${q.id}/preview`)}>↗</button>
+        <button className="row-action" title="Preview" aria-label="Preview quote" onClick={() => navigate(`/quotes/${q.id}/preview`)}><Icon name="open" /></button>
         <div className="row-menu">
-          <button className="row-action" aria-label="More actions" aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
+          <button className="row-action" aria-label="More actions" aria-expanded={menu} onClick={() => setMenu(!menu)}><Icon name="more" /></button>
           {menu && (
             <div className="row-menu-popover" onMouseLeave={() => setMenu(false)}>
-              <button onClick={() => navigate(`/quotes/new?from=${q.id}`)}>⧉ Duplicate as new quote</button>
-              <button className="danger-menu" onClick={remove}>🗑 Delete</button>
+              <button onClick={() => navigate(`/quotes/new?from=${q.id}`)}><Icon name="copy" />Duplicate as new quote</button>
+              <button className="danger-menu" onClick={remove}><Icon name="trash" />Delete</button>
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -8,12 +8,13 @@ import { ROOM_SUGGESTIONS } from '../lib/defaults';
 import { fmt, isExpired, uid } from '../lib/format';
 import { itemAmount, sectionTotal, totals } from '../lib/math';
 import { useQuoteEditor, type NewQuoteSeed, type SaveState } from '../lib/useQuoteEditor';
+import type { ImportInfo } from '../lib/importSheet';
 import { NumField } from '../components/fields';
 import { ClientPicker } from '../components/ClientPicker';
 import { ItemLibrary } from '../components/ItemLibrary';
-import { PreviewScreen } from './Preview';
-import { MenuCtx, Modal, StatusChip, useConfirm, useToast } from '../ui';
-import { useContext } from 'react';
+import { PdfPreview, PreviewScreen } from './Preview';
+import { MenuCtx, Modal, StatusChip, useConfirm, useMediaQuery, useToast } from '../ui';
+import { Icon } from '../components/Icon';
 
 const SAVE_LABEL: Record<SaveState, string> = {
   new: 'Not saved yet — add an item to save',
@@ -37,6 +38,15 @@ export function Builder({ preview = false }: { preview?: boolean }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [unlocked, setUnlocked] = useState(false);
+  // Set when this quote was just built from a spreadsheet (pages/Import.tsx). Kept in
+  // state because the first save replaces the URL (and its history state).
+  const [imported, setImported] = useState(() => {
+    const s = location.state as { importInfo?: ImportInfo; importFlags?: Record<string, string> } | null;
+    return s?.importInfo ? { info: s.importInfo, flags: s.importFlags ?? {} } : null;
+  });
+  const del = useMutation(api.quotes.deleteQuote);
+  // Desk mode: wide screens get the live PDF beside the editor (keep in sync with .builder-desk in app.css).
+  const desk = useMediaQuery('(min-width: 1280px)');
 
   if (loadError) {
     return (
@@ -82,7 +92,7 @@ export function Builder({ preview = false }: { preview?: boolean }) {
   }
 
   const locked = quote.status !== 'draft' && !unlocked;
-  return (
+  const editorPane = (
     <section className="app builder">
       <BuilderHead quote={quote} saveState={saveState} onStatus={(status) => update((q) => ({ ...q, status }))} onRestored={editor.reload} />
 
@@ -109,10 +119,25 @@ export function Builder({ preview = false }: { preview?: boolean }) {
         </div>
       )}
 
+      {imported && (
+        <ImportBanner
+          info={imported.info}
+          onDismiss={() => setImported(null)}
+          onUndo={async () => {
+            const q = await flush();
+            if (q?.id) await del({ id: q.id });
+            toast({ message: 'Import undone.', type: 'success' });
+            navigate('/import');
+          }}
+        />
+      )}
+
       <fieldset disabled={locked} className="builder-body">
         <CustomerCard quote={quote} update={update} />
         <DetailsCard quote={quote} update={update} />
-        <Rooms quote={quote} update={update} />
+        <ImportFlags.Provider value={imported?.flags ?? NO_FLAGS}>
+          <Rooms quote={quote} update={update} />
+        </ImportFlags.Provider>
         <TermsCard quote={quote} update={update} />
         <div className="bar-spacer" />
       </fieldset>
@@ -129,9 +154,53 @@ export function Builder({ preview = false }: { preview?: boolean }) {
       />
     </section>
   );
+  if (!desk) return editorPane;
+  return (
+    <div className="builder-desk">
+      {editorPane}
+      <aside className="desk-preview" aria-label="Live PDF preview">
+        <PdfPreview quote={quote} delay={600} />
+      </aside>
+    </div>
+  );
 }
 
 type Update = (fn: (q: Quote) => Quote) => void;
+
+/** Notes on imported items ("rate from rate card"), by item id. */
+const NO_FLAGS: Record<string, string> = {};
+const ImportFlags = createContext(NO_FLAGS);
+
+function ImportBanner({ info, onUndo, onDismiss }: { info: ImportInfo; onUndo: () => void; onDismiss: () => void }) {
+  const [open, setOpen] = useState(false);
+  const n = info.skipped.length;
+  return (
+    <div className="import-banner" role="status">
+      <div className="import-banner-row">
+        <span className="xl-badge">X</span>
+        <span className="import-banner-text">
+          {info.items} item{info.items === 1 ? '' : 's'} from <b>{info.file}</b>
+          {info.filled > 0 && <> · <span className="warn">{info.filled} filled from your rate card</span></>}
+          {!!info.terms && <> · {info.terms} terms</>}
+          {n > 0 && <> · <span className="bad">{n} row{n === 1 ? '' : 's'} skipped</span></>}
+        </span>
+        {n > 0 && <button className="btn ghost" onClick={() => setOpen(!open)} aria-expanded={open}>{open ? 'Hide skipped' : 'Show skipped'}</button>}
+        <button className="btn ghost" onClick={onUndo}>Undo import</button>
+        <button className="icon-btn" onClick={onDismiss} aria-label="Dismiss"><Icon name="close" /></button>
+      </div>
+      {open && (
+        <div className="import-notes">
+          {info.skipped.map((s) => (
+            <div key={s.row} className="import-note skipped">
+              <span className="import-note-row">R{s.row}</span>
+              <span>{s.name ?? '—'} — {s.note?.toLowerCase()}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function BuilderHead({ quote, saveState, onStatus, onRestored }: {
   quote: Quote; saveState: SaveState; onStatus: (s: Status) => void; onRestored: () => void;
@@ -141,9 +210,9 @@ function BuilderHead({ quote, saveState, onStatus, onRestored }: {
   const [history, setHistory] = useState(false);
   return (
     <header className="builder-head">
-      <button className="icon-btn menu-btn" onClick={openMenu} aria-label="Open menu">☰</button>
+      <button className="icon-btn menu-btn" onClick={openMenu} aria-label="Open menu"><Icon name="menu" /></button>
       <div className="head-title-wrap">
-        <Link to="/" className="crumb">← Quotes</Link>
+        <Link to="/" className="crumb"><Icon name="back" />Quotes</Link>
         <h1 className="head-title">{quote.quoteNo || 'New quote'} {quote.id && <StatusChip status={quote.status} expired={isExpired(quote)} />}</h1>
         <div className={'save-state ' + saveState} role="status" aria-live="polite">
           {saveState === 'new' && quote.sections.some((s) => s.items.length)
@@ -261,9 +330,9 @@ function Rooms({ quote, update }: { quote: Quote; update: Update }) {
           <>
             <div className="room-chips">
               {ROOM_SUGGESTIONS.filter((r) => !used.has(r.toLowerCase())).slice(0, 8).map((r) => (
-                <button type="button" key={r} className="cat-tag" onClick={() => addRoom(r)}>＋ {r}</button>
+                <button type="button" key={r} className="cat-tag" onClick={() => addRoom(r)}><Icon name="plus" />{r}</button>
               ))}
-              <button type="button" className="cat-tag create" onClick={() => setNaming(true)}>＋ Other room…</button>
+              <button type="button" className="cat-tag create" onClick={() => setNaming(true)}><Icon name="plus" />Other room…</button>
             </div>
           </>
         )}
@@ -289,29 +358,31 @@ function RoomCard({ sec, first, last, onChange, onMove, onDelete, onAddItems }: 
 }) {
   const setItem = (id: string, patch: Partial<Item>) =>
     onChange((s) => ({ ...s, items: s.items.map((it) => (it.id === id ? { ...it, ...patch } : it)) }));
+  const flags = useContext(ImportFlags);
   return (
     <div className={'card section-card' + (sec.collapsed ? ' collapsed' : '')}>
       <div className="sec-head">
         <button type="button" className="chev-btn" onClick={() => onChange((s) => ({ ...s, collapsed: !s.collapsed }))} aria-label={sec.collapsed ? 'Expand room' : 'Collapse room'} aria-expanded={!sec.collapsed}>
-          <span className="chev">▼</span>
+          <span className="chev"><Icon name="chevron" /></span>
         </button>
         <div className="sec-title">
           <input className="sec-name" value={sec.name} aria-label="Room name" placeholder="Room name" onChange={(e) => onChange((s) => ({ ...s, name: e.target.value }))} />
           <div className="sec-sub">{sec.items.length} item{sec.items.length === 1 ? '' : 's'} · {fmt(sectionTotal(sec))}</div>
         </div>
         <div className="sec-tools">
-          <button type="button" className="icon-btn" disabled={first} onClick={() => onMove(-1)} aria-label="Move room up">↑</button>
-          <button type="button" className="icon-btn" disabled={last} onClick={() => onMove(1)} aria-label="Move room down">↓</button>
-          <button type="button" className="icon-btn danger" onClick={onDelete} aria-label="Delete room">🗑</button>
+          <button type="button" className="icon-btn" disabled={first} onClick={() => onMove(-1)} aria-label="Move room up"><Icon name="up" /></button>
+          <button type="button" className="icon-btn" disabled={last} onClick={() => onMove(1)} aria-label="Move room down"><Icon name="down" /></button>
+          <button type="button" className="icon-btn danger" onClick={onDelete} aria-label="Delete room"><Icon name="trash" /></button>
         </div>
       </div>
       <div className="sec-body">
         {sec.items.map((it) => (
-          <div key={it.id} className={'item-row' + (it.lump ? ' lump' : '')}>
+          <div key={it.id} className={'item-row' + (it.lump ? ' lump' : '') + (flags[it.id] ? ' flagged' : '')}>
             <div className="item-top">
               <input className="item-desc" value={it.name} aria-label="Item name" placeholder="Item name" onChange={(e) => setItem(it.id, { name: e.target.value })} />
-              <button type="button" className="item-del" aria-label={`Remove ${it.name}`} onClick={() => onChange((s) => ({ ...s, items: s.items.filter((x) => x.id !== it.id) }))}>✕</button>
+              <button type="button" className="item-del" aria-label={`Remove ${it.name}`} onClick={() => onChange((s) => ({ ...s, items: s.items.filter((x) => x.id !== it.id) }))}><Icon name="close" /></button>
             </div>
+            {flags[it.id] && <div className="item-flag">{flags[it.id]}</div>}
             <div className="item-dims">
               {!it.lump && (
                 <>
@@ -325,7 +396,7 @@ function RoomCard({ sec, first, last, onChange, onMove, onDelete, onAddItems }: 
           </div>
         ))}
         {!sec.items.length && <div className="empty-note">No items yet.</div>}
-        <button type="button" className="add-item-btn" onClick={onAddItems}>＋ Add items</button>
+        <button type="button" className="add-item-btn" onClick={onAddItems}><Icon name="plus" />Add items</button>
       </div>
     </div>
   );
@@ -349,10 +420,10 @@ function TermsCard({ quote, update }: { quote: Quote; update: Update }) {
         <div className="term-edit" key={i}>
           <span className="cat-term-n">{i + 1}</span>
           <textarea className="cat-term-input" rows={2} value={t} aria-label={`Term ${i + 1}`} onChange={(e) => setTerm(i, e.target.value)} />
-          <button type="button" className="icon-btn danger" aria-label={`Remove term ${i + 1}`} onClick={() => update((q) => ({ ...q, terms: q.terms.filter((_, j) => j !== i) }))}>✕</button>
+          <button type="button" className="icon-btn danger" aria-label={`Remove term ${i + 1}`} onClick={() => update((q) => ({ ...q, terms: q.terms.filter((_, j) => j !== i) }))}><Icon name="close" /></button>
         </div>
       ))}
-      <button type="button" className="add-item-btn" onClick={() => update((q) => ({ ...q, terms: [...q.terms, ''] }))}>＋ Add term</button>
+      <button type="button" className="add-item-btn" onClick={() => update((q) => ({ ...q, terms: [...q.terms, ''] }))}><Icon name="plus" />Add term</button>
       <p className="modal-hint">GST, validity and timeline lines are added automatically on the PDF.</p>
 
       <h3 className="sub-head">Material specification</h3>
@@ -360,10 +431,10 @@ function TermsCard({ quote, update }: { quote: Quote; update: Update }) {
         <div className="spec-edit" key={i}>
           <input className="field" value={s.c} placeholder="Category" aria-label={`Specification ${i + 1} category`} onChange={(e) => setSpec(i, 'c', e.target.value)} />
           <textarea className="field" rows={2} value={s.d} placeholder="Details" aria-label={`Specification ${i + 1} details`} onChange={(e) => setSpec(i, 'd', e.target.value)} />
-          <button type="button" className="icon-btn danger" aria-label={`Remove specification ${i + 1}`} onClick={() => update((q) => ({ ...q, spec: q.spec.filter((_, j) => j !== i) }))}>✕</button>
+          <button type="button" className="icon-btn danger" aria-label={`Remove specification ${i + 1}`} onClick={() => update((q) => ({ ...q, spec: q.spec.filter((_, j) => j !== i) }))}><Icon name="close" /></button>
         </div>
       ))}
-      <button type="button" className="add-item-btn" onClick={() => update((q) => ({ ...q, spec: [...q.spec, { c: '', d: '' }] }))}>＋ Add specification row</button>
+      <button type="button" className="add-item-btn" onClick={() => update((q) => ({ ...q, spec: [...q.spec, { c: '', d: '' }] }))}><Icon name="plus" />Add specification row</button>
 
       <button
         type="button"
@@ -419,18 +490,18 @@ function VersionHistory({ quoteId, onClose, onRestored }: { quoteId: QuoteId; on
   const confirm = useConfirm();
   const toast = useToast();
   return (
-    <Modal title="Version history" sub="Saved versions of this quote, newest first." onClose={onClose}>
+    <Modal title="Version history" onClose={onClose}>
       <div className="quote-versions-list">
         {res === undefined && <div className="list-loading-note">Loading…</div>}
         {res?.versions.map((v) => {
           const t = v.snapshot;
           return (
             <div className="quote-version-row" key={v.id}>
-              <div className="quote-version-head">
+              <div className="quote-version-main">
                 <span className="quote-version-label">{new Date(v.changedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
-                <span className="quote-version-date">{v.changeType}</span>
+                <span className="quote-version-sub">{v.changeType} · {t.customer.name || 'No customer'} · {t.itemCount} item{t.itemCount === 1 ? '' : 's'} · {fmt(t.grand)}</span>
               </div>
-              <div className="quote-version-sub">{t.customer.name || 'No customer'} · {t.itemCount} items · {fmt(t.grand)} · {t.status ?? 'draft'}</div>
+              <StatusChip status={t.status ?? 'draft'} />
               <button className="btn ghost" onClick={async () => {
                 if (!(await confirm({ title: 'Restore this version?', message: 'The quote goes back to this version. The current version stays in the history.', confirmLabel: 'Restore' }))) return;
                 try {

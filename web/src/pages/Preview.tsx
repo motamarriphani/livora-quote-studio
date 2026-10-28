@@ -6,9 +6,10 @@ import { fmt } from '../lib/format';
 import { totals } from '../lib/math';
 import { downloadBlob, makePdfBlob, pdfFileName, renderPdfPages } from '../lib/pdf';
 import { useToast } from '../ui';
+import { Icon } from '../components/Icon';
 
 /** The real generated PDF, page by page — exactly what Download gives the client. */
-export function PdfPreview({ quote }: { quote: Quote }) {
+export function PdfPreview({ quote, delay = 150 }: { quote: Quote; delay?: number }) {
   const host = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState('Preparing…');
   const key = JSON.stringify(quote);
@@ -34,7 +35,7 @@ export function PdfPreview({ quote }: { quote: Quote }) {
         console.error(e);
         if (live) setStatus('Preview unavailable — Download still works');
       }
-    }, 150);
+    }, delay);
     return () => { live = false; clearTimeout(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
@@ -72,7 +73,7 @@ export function PreviewScreen({ quote, onBack, onDownloaded, beforeDownload, too
   return (
     <section className="quote-view">
       <div className="preview-bar">
-        <button className="btn ghost" onClick={onBack}>← Back to editing</button>
+        <button className="btn ghost" onClick={onBack}><Icon name="back" />Back to editing</button>
         <div className="preview-tools">{toolbar}</div>
       </div>
       <PdfPreview quote={quote} />
@@ -84,7 +85,7 @@ export function PreviewScreen({ quote, onBack, onDownloaded, beforeDownload, too
             Calculated {fmt(t.total)}{t.discount ? ` · Discount ${fmt(t.discount)}` : ''}{t.gstAmt ? ` · GST ${fmt(t.gstAmt)}` : ''}
           </div>
         </div>
-        <button className="btn primary" disabled={busy} onClick={download}>{busy ? 'Preparing…' : '⬇ Download PDF'}</button>
+        <button className="btn primary" disabled={busy} onClick={download}>{busy ? 'Preparing…' : <><Icon name="download" />Download PDF</>}</button>
       </div>
     </section>
   );

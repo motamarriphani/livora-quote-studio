@@ -7,6 +7,7 @@ import { fmt, initials } from '../lib/format';
 import { ClientForm, type ClientRecord } from '../components/ClientForm';
 import { PageHead, useConfirm, useToast } from '../ui';
 import { QuoteList } from './Dashboard';
+import { Icon } from '../components/Icon';
 
 export function Clients() {
   const [term, setTerm] = useState('');
@@ -20,8 +21,8 @@ export function Clients() {
   return (
     <section>
       <PageHead title={archived ? 'Archived clients' : 'Clients'} sub={archived ? 'Hidden from the client book. Their quotes are untouched.' : 'Your client book'}>
-        <button className="btn ghost head-btn" onClick={() => setArchived(!archived)}>{archived ? '← Active clients' : 'Archived'}</button>
-        {!archived && <button className="btn primary head-btn" onClick={() => setEditing('new')}>＋ Add client</button>}
+        <button className="btn ghost head-btn" onClick={() => setArchived(!archived)}>{archived ? 'Active clients' : 'Archived'}</button>
+        {!archived && <button className="btn primary head-btn" onClick={() => setEditing('new')}><Icon name="plus" />Add client</button>}
       </PageHead>
       <input className="field search" type="search" placeholder="Search by name, phone or address…" value={term} onChange={(e) => setTerm(e.target.value)} />
       <div className="client-list">
@@ -80,20 +81,20 @@ function ClientRow({ c, archived, onEdit }: {
           {!archived && (
             <button className="btn ghost client-quick" onClick={() => navigate('/quotes/new', {
               state: { customer: { name: c.name, phone: c.phone, address: c.address }, clientId: c.id },
-            })}>＋ Quote</button>
+            })}><Icon name="plus" />Quote</button>
           )}
-          <button className="icon-btn" aria-label={`Edit ${c.name}`} onClick={() => onEdit(c)}>✏️</button>
+          <button className="icon-btn" aria-label={`Edit ${c.name}`} onClick={() => onEdit(c)}><Icon name="edit" /></button>
           <button className="icon-btn" aria-label={archived ? `Restore ${c.name}` : `Archive ${c.name}`} title={archived ? 'Restore' : 'Archive'} onClick={async () => {
             if (archived) { await unarchive({ id: c.id }); toast({ message: `${c.name} restored.`, type: 'success' }); return; }
             if (!(await confirm({ title: 'Archive client?', message: `${c.name} is hidden from the client book. Their quotes stay in your quote list.`, confirmLabel: 'Archive' }))) return;
             await archive({ id: c.id });
             toast({ message: `${c.name} archived.`, type: 'success', action: { label: 'Undo', run: () => void unarchive({ id: c.id }) } });
-          }}>{archived ? '↩' : '📦'}</button>
+          }}><Icon name={archived ? 'restore' : 'archive'} /></button>
         </div>
       </div>
       {open && (
         <div className="client-quotes-panel">
-          <QuoteList args={{ clientId: c.id }} emptyText="Tap ＋ Quote to make the first quote for this client." />
+          <QuoteList args={{ clientId: c.id }} emptyText="Tap Quote to make the first quote for this client." />
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 // Small shared UI primitives: modal sheet, confirm dialog, toasts.
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Icon } from './components/Icon';
 
 export function Modal({ title, sub, onClose, small, children }: {
   title: string; sub?: ReactNode; onClose: () => void; small?: boolean; children: ReactNode;
@@ -22,7 +23,7 @@ export function Modal({ title, sub, onClose, small, children }: {
             <div className="modal-title">{title}</div>
             {sub && <div className="modal-sub">{sub}</div>}
           </div>
-          <button className="icon-btn modal-x" onClick={onClose} aria-label="Close">✕</button>
+          <button className="icon-btn modal-x" onClick={onClose} aria-label="Close"><Icon name="close" /></button>
         </div>
         {children}
       </div>
@@ -83,6 +84,19 @@ export function UiProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Live CSS media-query match, for UI that is expensive to render where it isn't shown. */
+export function useMediaQuery(query: string) {
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setMatch(mq.matches);
+    on();
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [query]);
+  return match;
+}
+
 /* ── Page header with the mobile menu button ── */
 export const MenuCtx = createContext<() => void>(() => {});
 
@@ -90,7 +104,7 @@ export function PageHead({ title, sub, children }: { title: ReactNode; sub?: Rea
   const openMenu = useContext(MenuCtx);
   return (
     <header className="view-head">
-      <button className="icon-btn menu-btn" onClick={openMenu} aria-label="Open menu">☰</button>
+      <button className="icon-btn menu-btn" onClick={openMenu} aria-label="Open menu"><Icon name="menu" /></button>
       <div className="head-title-wrap">
         <h1 className="head-title">{title}</h1>
         {sub && <div className="head-sub">{sub}</div>}

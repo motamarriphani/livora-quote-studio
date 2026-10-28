@@ -16,6 +16,7 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.61.11",
     "convex": "^1.43.0",
+    "exceljs": "^4.4.0",
     "pdfjs-dist": "^6.4.299",
     "pdfmake": "^0.3.13",
     "react": "^19.3.1",
