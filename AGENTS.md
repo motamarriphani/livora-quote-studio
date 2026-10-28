@@ -4,6 +4,11 @@ Mobile-first quote builder for LIVORA Interiors. Designers build quotes on their
 
 This is the **accounts edition**. The original no-login site lives in a separate repo (`livora quotation`, deployed at https://livora-quote.pages.dev). Do not mix the two.
 
+## Principles
+
+- Cut taglines, helper text and secondary labels. If a screen needs them to make sense, fix the layout.
+- Make the best decision that will elevate all three: the user experience (UX), developer experience (DX), and agent experience (AX) always, without breaking anything.
+
 ## Decisions (keep to these)
 
 - **Online-only.** The cloud copy is the truth; there is no offline/local-first sync. Short connection drops are covered by the Convex client queueing mutations while the page is open, and a banner says so. Don't add IndexedDB, service workers or outbox sync unless asked.
