@@ -5,6 +5,7 @@ import type { Item } from '../lib/types';
 import { fmt, uid } from '../lib/format';
 import { Modal } from '../ui';
 import { NumField } from './fields';
+import { Icon } from './Icon';
 
 /** Add items to a room: from the rate card, or a one-off custom line. */
 export function ItemLibrary({ roomName, onAdd, onClose }: {
@@ -44,7 +45,7 @@ export function ItemLibrary({ roomName, onAdd, onClose }: {
         {catalog && !pool.length && <div className="cp-empty" style={{ gridColumn: '1/-1' }}>Nothing matches “{q}”.</div>}
       </div>
       <div className="modal-foot split">
-        <button className="btn ghost" onClick={() => setCustom(true)}>＋ Custom item</button>
+        <button className="btn ghost" onClick={() => setCustom(true)}><Icon name="plus" />Custom item</button>
         <button className="btn primary" onClick={onClose}>Done</button>
       </div>
     </Modal>

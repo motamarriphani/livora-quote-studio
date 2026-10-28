@@ -14,7 +14,8 @@ import { copyAsNew, newQuote } from './defaults';
 import { fromDoc, isWorthSaving, toPayload } from './convert';
 
 export type SaveState = 'new' | 'unsaved' | 'saving' | 'saved' | 'error' | 'conflict';
-export type NewQuoteSeed = { customer?: Customer; clientId?: ClientId | null; from?: string };
+/** `imported`: a draft built from a spreadsheet (pages/Import.tsx); it saves right away. */
+export type NewQuoteSeed = { customer?: Customer; clientId?: ClientId | null; from?: string; imported?: Quote };
 
 const DEBOUNCE_MS = 1000;
 
@@ -54,6 +55,8 @@ export function useQuoteEditor(routeId: string, seed: NewQuoteSeed) {
             const doc = await convex.query(api.quotes.getQuote, { id: seed.from as QuoteId });
             if (!doc) throw new Error('The quote to copy no longer exists.');
             q = copyAsNew(fromDoc(doc));
+          } else if (seed.imported) {
+            q = seed.imported;
           } else {
             const catalog = await convex.query(api.catalog.getCatalog, {});
             q = newQuote(catalog, seed.customer, seed.clientId ?? null);
@@ -64,9 +67,15 @@ export function useQuoteEditor(routeId: string, seed: NewQuoteSeed) {
           q = fromDoc(doc);
         }
         if (!live) return;
-        dirty.current = false;
         apply(q);
-        setState(q.id ? 'saved' : 'new');
+        if (!q.id && seed.imported) {
+          dirty.current = true;
+          setState('unsaved');
+          schedule();
+        } else {
+          dirty.current = false;
+          setState(q.id ? 'saved' : 'new');
+        }
       } catch (e) {
         if (live) setLoadError(e instanceof Error && !(e instanceof ConvexError) ? e.message : 'Could not open this quote.');
       }

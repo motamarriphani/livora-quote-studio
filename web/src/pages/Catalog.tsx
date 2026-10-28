@@ -7,6 +7,7 @@ import type { Catalog, Spec } from '../lib/types';
 import { fmt, uid } from '../lib/format';
 import { NumField } from '../components/fields';
 import { Modal, PageHead, useConfirm, useToast } from '../ui';
+import { Icon } from '../components/Icon';
 
 function useCatalog() {
   const doc = useQuery(api.catalog.getCatalog);
@@ -67,7 +68,7 @@ export function RateCard() {
   return (
     <section>
       <PageHead title="Rate card" sub={NOTE}>
-        <button className="btn primary head-btn" onClick={() => setEditing('new')}>＋ Add rate</button>
+        <button className="btn primary head-btn" onClick={() => setEditing('new')}><Icon name="plus" />Add rate</button>
       </PageHead>
       <div className="cat-filters">
         <input className="field search" type="search" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -77,18 +78,18 @@ export function RateCard() {
         </select>
       </div>
       <div className="cat-list">
-        {!shown.length && <div className="cat-empty">{rows.length ? 'Nothing matches.' : 'No rates yet — tap ＋ Add rate.'}</div>}
+        {!shown.length && <div className="cat-empty">{rows.length ? 'Nothing matches.' : 'No rates yet — tap Add rate.'}</div>}
         {shown.map((r) => (
           <div className="cat-row cat-item-row" key={(r.lump ? 'l' : 'm') + r.id}>
             <div className="cat-item-name">{r.name}</div>
             <div className="cat-item-price">{fmt(r.rate)}{r.lump ? ' lump sum' : ' / sq ft'}</div>
             <div className="cat-item-sub">{[r.cat, !r.lump && r.w && r.h ? `default ${r.w} × ${r.h} ft` : ''].filter(Boolean).join(' · ')}</div>
             <div className="cat-row-actions">
-              <button className="icon-btn" aria-label={`Edit ${r.name}`} onClick={() => setEditing(r)}>✏️</button>
+              <button className="icon-btn" aria-label={`Edit ${r.name}`} onClick={() => setEditing(r)}><Icon name="edit" /></button>
               <button className="icon-btn danger" aria-label={`Delete ${r.name}`} onClick={async () => {
                 if (!(await confirm({ title: 'Delete rate?', message: `Remove “${r.name}” from the rate card?`, confirmLabel: 'Delete', danger: true }))) return;
                 await commit({ ...c, items: c.items.filter((x) => r.lump || x.id !== r.id), services: c.services.filter((x) => !r.lump || x.id !== r.id) });
-              }}>🗑</button>
+              }}><Icon name="trash" /></button>
             </div>
           </div>
         ))}
@@ -180,10 +181,10 @@ export function Specifications() {
           <div className="cat-row spec-edit" key={i}>
             <input className="field" value={s.c} placeholder="Category (e.g. Laminates)" aria-label={`Row ${i + 1} category`} onChange={(e) => set(i, 'c', e.target.value)} />
             <textarea className="field" rows={2} value={s.d} placeholder="Details" aria-label={`Row ${i + 1} details`} onChange={(e) => set(i, 'd', e.target.value)} />
-            <button className="icon-btn danger" aria-label={`Remove row ${i + 1}`} onClick={() => d.set(rows.filter((_, j) => j !== i))}>✕</button>
+            <button className="icon-btn danger" aria-label={`Remove row ${i + 1}`} onClick={() => d.set(rows.filter((_, j) => j !== i))}><Icon name="close" /></button>
           </div>
         ))}
-        <button className="add-item-btn" onClick={() => d.set([...rows, { c: '', d: '' }])}>＋ Add row</button>
+        <button className="add-item-btn" onClick={() => d.set([...rows, { c: '', d: '' }])}><Icon name="plus" />Add row</button>
       </div>
       <SaveBar dirty={d.dirty} onDiscard={d.reset} onSave={async () => {
         const materials = rows.filter((s) => s.c.trim() && s.d.trim());
@@ -209,13 +210,13 @@ export function DefaultTerms() {
             <span className="cat-term-n">{i + 1}</span>
             <textarea className="cat-term-input" rows={2} value={t} aria-label={`Term ${i + 1}`} onChange={(e) => d.set(rows.map((x, j) => (j === i ? e.target.value : x)))} />
             <div className="term-tools">
-              <button className="icon-btn" disabled={i === 0} aria-label="Move up" onClick={() => move(i, -1)}>↑</button>
-              <button className="icon-btn" disabled={i === rows.length - 1} aria-label="Move down" onClick={() => move(i, 1)}>↓</button>
-              <button className="icon-btn danger" aria-label={`Remove term ${i + 1}`} onClick={() => d.set(rows.filter((_, j) => j !== i))}>✕</button>
+              <button className="icon-btn" disabled={i === 0} aria-label="Move up" onClick={() => move(i, -1)}><Icon name="up" /></button>
+              <button className="icon-btn" disabled={i === rows.length - 1} aria-label="Move down" onClick={() => move(i, 1)}><Icon name="down" /></button>
+              <button className="icon-btn danger" aria-label={`Remove term ${i + 1}`} onClick={() => d.set(rows.filter((_, j) => j !== i))}><Icon name="close" /></button>
             </div>
           </div>
         ))}
-        <button className="add-item-btn" onClick={() => d.set([...rows, ''])}>＋ Add term</button>
+        <button className="add-item-btn" onClick={() => d.set([...rows, ''])}><Icon name="plus" />Add term</button>
       </div>
       <SaveBar dirty={d.dirty} onDiscard={d.reset} onSave={async () => {
         if (catalog && (await commit({ ...catalog, terms: rows.map((t) => t.trim()).filter(Boolean) }))) { d.saved(); toast({ message: 'Terms saved.', type: 'success' }); }

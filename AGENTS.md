@@ -23,9 +23,9 @@ This is the **accounts edition**. The original no-login site lives in a separate
 
 - `web/src/main.tsx` — providers (Clerk, Convex, router, UI). Clerk key / Convex URL come from `VITE_CLERK_PUBLISHABLE_KEY` / `VITE_CONVEX_URL`, falling back to the development values.
 - `web/src/App.tsx` — sign-in, workspace bootstrap (`company:ensureCompany`), sidebar, routes, connection banner.
-- `web/src/pages/` — `Dashboard` (quotes list + stats), `Builder` (editor, preview, version history), `Preview` (PDF preview + sample), `Clients`, `Catalog` (rate card, specifications, default terms), `Trash` (deleted quotes).
+- `web/src/pages/` — `Dashboard` (quotes list + stats), `Builder` (editor, preview, version history), `Preview` (PDF preview + sample), `Clients`, `Catalog` (rate card, specifications, default terms), `Trash` (deleted quotes), `Import` (Excel → new quote: column matching on desktop, review on phone).
 - `web/src/components/` — client picker/form, item library, number field.
-- `web/src/lib/` — `types`, `math`, `format`, `defaults` (letterhead `COMPANY`, seed catalog, sample, new/copy quote, printed terms), `convert` (Convex doc ↔ editor quote, save payload), `pdf` (pdfmake definition + pdf.js preview, both lazy-loaded), `useQuoteEditor`.
+- `web/src/lib/` — `types`, `math`, `format`, `defaults` (letterhead `COMPANY`, seed catalog, sample, new/copy quote, printed terms), `convert` (Convex doc ↔ editor quote, save payload), `pdf` (pdfmake definition + pdf.js preview, both lazy-loaded), `logo` (vector LIVORA mark for the PDF), `importSheet` (spreadsheet rows → quote; pure, tested), `excel` (ExcelJS template + reader, lazy-loaded), `useQuoteEditor`.
 - `web/src/styles.css` (design system) + `web/src/app.css` (React-specific additions).
 - `convex/` — `schema.ts`, `validators.ts`, `common.ts`, `company.ts`, `catalog.ts`, `clients.ts`, `quotes.ts`. Every function is auth-gated; the tenant is derived from the signed-in user, never from client input.
 - `scripts/verify.mjs` — `npm test`.
